@@ -33,15 +33,36 @@ void showGFlops(double flops, float time) {
   printf("Performance= %.2f GFlop/s, Time= %.3f msec, Size= %.0f Ops\n", gigaFlops, time, flops);
 }
 
+void compareL2error();
+void benchmark();
+
 int main (int argc, char* argv[]) {
+
+  compareL2error();
+  benchmark();
+  // mat inv("data/inv_x.mat");
+  // mat L("data/L.mat");
+  // mat U("data/U.mat");
+
+  return 0;
+}
+
+void compareL2error() {
+
+  mat A("data/A.mat");
+  mat B("data/B.mat");
+  mat C("data/C.mat");
+
+  float error = snrm2(C - A*B) / snrm2(C);
+  printf("error = %.7e \n", error);
+
+}
+
+void benchmark() {
 
   mat A("data/A.mat");
   mat B("data/B.mat");
   mat C;
-
-  // mat inv("data/inv_x.mat");
-  // mat L("data/L.mat");
-  // mat U("data/U.mat");
 
   Timer timer;
   timer.tic();
@@ -61,6 +82,4 @@ int main (int argc, char* argv[]) {
 
   avgTime = timer2.toc() / nIter;
   showGFlops(flops, avgTime);
-
-  return 0;
 }
