@@ -5,8 +5,10 @@
 #include <string>
 using namespace std;
 
+#ifdef HAS_HOST_MATRIX
 #include <matrix.h>
 #define host_matrix Matrix2D
+#endif
 
 #include <thrust/transform_reduce.h>
 #include <thrust/functional.h>
@@ -45,9 +47,11 @@ public:
   // Copy Constructor 
   device_matrix(const device_matrix<T>& source);
 
+#ifdef HAS_HOST_MATRIX
   // Constructor from Host Matrix
   device_matrix(const host_matrix<T>& h_matrix);
   operator host_matrix<T>() const;
+#endif
 
   // Destructor
   ~device_matrix();
@@ -102,7 +106,7 @@ public:
 
   void _init();
   void resize(size_t r, size_t c);
-  void print(size_t precision = 5) const ;
+  void print(FILE* fid = stdout) const;
 
   void fillwith(T val) {
     cudaMemset(_data, 0, _rows * _cols * sizeof(T));
