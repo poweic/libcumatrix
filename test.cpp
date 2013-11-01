@@ -3,6 +3,7 @@
 
 #include <device_matrix.h>
 #include <device_math_ext.h>
+// #include <device_arithmetic.h>
 #define TEST_CL2E(x, y) {printf("checking "#x" ... "); compareL2error((x), (y));}
 
 using namespace std;
@@ -11,6 +12,8 @@ typedef device_matrix<float> mat;
 typedef thrust::device_vector<float> vec;
 
 void testing();
+void checkErrorIsAcceptable(double err);
+//void compareL2error(const vec& v, const vec& ref);
 void compareL2error(const mat& m, const mat& ref);
 
 int main (int argc, char* argv[]) {
@@ -74,6 +77,10 @@ void testing() {
   printf("A : %lu by %lu \n", C.getRows(), C.getCols());
   printf("AC: %lu by %lu \n", AC.getRows(), AC.getCols());
 
+  printf("\n===== FILE I/O Testing =====\n");
+  A.save("/tmp/cumatrix.mat");
+  TEST_CL2E(mat("/tmp/cumatrix.mat"), A)
+
   printf("\n===== Matrix Addition =====\n");
   TEST_CL2E(A + B, ApB);
   TEST_CL2E(A - B, AmB);
@@ -92,15 +99,19 @@ void testing() {
 }
 
 void compareL2error(const mat& m, const mat& ref) {
-  const float EPS = 1e-6;
   float error = snrm2(m - ref) / snrm2(ref);
+  checkErrorIsAcceptable(error);
+}
+
+/*void compareL2error(const vec& v, const vec& ref) {
+  float error = norm(v - ref) / norm(ref);
+  checkErrorIsAcceptable(error);
+}*/
+
+void checkErrorIsAcceptable(double error) {
+  const float EPS = 1e-6;
   if (error < EPS)
     printf("\33[32m[ OK ]\33[0m \n");
   else
     printf("error = %.4e > EPS (%.4e) \33[31m[FAILED]\33[0m\n", error, EPS);
 }
-
-
-
-
-

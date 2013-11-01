@@ -12,14 +12,42 @@ device_matrix<T>::device_matrix(size_t r, size_t c): _rows(r), _cols(c), _data(N
 
 template <typename T>
 device_matrix<T>::device_matrix(const string& filename): _rows(0), _cols(0), _data(NULL) {
-  host_matrix<T> hm(filename);
-  *this = device_matrix<T>(hm);
+
+  const size_t MAX_BUFFER = 65536;
+  char line[MAX_BUFFER];
+
+  FILE* fid = fopen(filename.c_str(), "r");
+  while (fgets(line, MAX_BUFFER, fid)) {
+    _rows++;
+
+    if (_cols != 0)
+      continue;
+
+    char* token = strtok(line, " \n");
+    ++_cols;
+    while(strtok(NULL, " \n"))
+      ++_cols;
+  }
+  fseek(fid, 0, SEEK_SET);
+
+  // BEWARE !!
+  // BLAS stores data in column-major
+  T* data = new T[_rows*_cols];
+  for (size_t i=0; i<_rows; ++i)
+    for (size_t j=0; j<_cols; ++j)
+      fscanf(fid, "%f ", &(data[j*_rows + i]));
+  fclose(fid);
+
+  _init();
+  CCE(cudaMemcpy(_data, data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice));
+  delete [] data;
+  // host_matrix<T> hm(filename);
+  // *this = device_matrix<T>(hm);
 }
 // Copy Constructor 
 template <typename T>
 device_matrix<T>::device_matrix(const device_matrix<T>& source): _rows(source._rows), _cols(source._cols), _data(NULL) {
   _init();
-
   CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyHostToHost));
 }
 
@@ -188,9 +216,25 @@ void device_matrix<T>::print(size_t precision) const {
 }
 
 template <typename T>
-void device_matrix<T>::saveas(const string& filename) const {
-  host_matrix<T> hm(*this);
-  hm.saveas(filename);
+void device_matrix<T>::save(const string& filename) const {
+  FILE* fid = fopen(filename.c_str(), "w");
+  if (fid == NULL)
+    return;
+  
+  T* data = new T[size()];
+  CCE(cudaMemcpy(data, _data, sizeof(T) * size(), cudaMemcpyDeviceToHost));
+
+  for (size_t i=0; i<_rows; ++i) {
+    for (size_t j=0; j<_cols; ++j)
+      fprintf(fid, "%.7f ", data[j*_rows + i]);
+    fprintf(fid, "\n");
+  }
+
+  delete [] data;
+  fclose(fid);
+
+  //host_matrix<T> hm(*this);
+  //hm.saveas(filename);
 }
 // ++++++++++++++++++++++++++++++++++++++++++++
 // +++++ Template Explicit Initialization +++++

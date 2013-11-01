@@ -112,7 +112,7 @@ public:
   size_t getRows() const { return _rows; }
   size_t getCols() const { return _cols; }
   T* getData() const { return _data; }
-  void saveas(const string& filename) const;
+  void save(const string& filename) const;
 
   static CUBLAS_HANDLE _handle;
 
