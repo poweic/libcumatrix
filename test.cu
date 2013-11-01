@@ -3,7 +3,7 @@
 
 #include <device_matrix.h>
 #include <device_math_ext.h>
-// #include <device_arithmetic.h>
+#include <device_arithmetic.h>
 #define TEST_CL2E(x, y) {printf("checking "#x" ... "); compareL2error((x), (y));}
 
 using namespace std;
@@ -13,7 +13,7 @@ typedef thrust::device_vector<float> vec;
 
 void testing();
 void checkErrorIsAcceptable(double err);
-//void compareL2error(const vec& v, const vec& ref);
+void compareL2error(const vec& v, const vec& ref);
 void compareL2error(const mat& m, const mat& ref);
 
 int main (int argc, char* argv[]) {
@@ -31,10 +31,6 @@ void testing() {
   vec y = ext::load<float>("data/y.vec");
   vec u = ext::load<float>("data/u.vec");
   vec v = ext::load<float>("data/v.vec");
-  // mat x("data/x.vec");
-  // mat y("data/y.vec");
-  // mat u("data/u.vec");
-  // mat v("data/v.vec");
 
   mat ApB("data/A+B.mat");
   mat AmB("data/A-B.mat");
@@ -46,20 +42,15 @@ void testing() {
   mat BC("data/BC.mat");
   mat BD("data/BD.mat");
 
-  mat Ax("data/Ax.vec");
-  mat Bx("data/Bx.vec");
-  mat Cy("data/Cy.vec");
-  mat Dy("data/Dy.vec");
+  vec Ax = ext::load<float>("data/Ax.vec");
+  vec Bx = ext::load<float>("data/Bx.vec");
+  vec Cy = ext::load<float>("data/Cy.vec");
+  vec Dy = ext::load<float>("data/Dy.vec");
 
-  mat uA("data/uA.vec");
-  mat uB("data/uB.vec");
-  mat uC("data/vC.vec");
-  mat uD("data/vD.vec");
-
-  mat xu("data/xu.mat");
-  mat xv("data/xv.mat");
-  mat yu("data/yu.mat");
-  mat yv("data/yv.mat");
+  vec uA = ext::load<float>("data/uA.vec");
+  vec uB = ext::load<float>("data/uB.vec");
+  vec vC = ext::load<float>("data/vC.vec");
+  vec vD = ext::load<float>("data/vD.vec");
 
   mat PIpA("data/pi+A.mat");
   mat PImB("data/pi-B.mat");
@@ -70,6 +61,12 @@ void testing() {
   mat uBx("data/uBx.scalar");
   mat vCy("data/vCy.scalar");
   mat vDy("data/vDy.scalar");
+
+  mat xu("data/xu.mat");
+  mat xv("data/xv.mat");
+  mat yu("data/yu.mat");
+  mat yv("data/yv.mat");
+
 
   Matrix2D<float> hA(A);
 
@@ -94,8 +91,21 @@ void testing() {
   TEST_CL2E(B * D, BD);
 
   printf("\n===== Matrix - Vector Multiplication =====\n");
-  vec c = A*x;
+  TEST_CL2E(A * x, Ax);
+  TEST_CL2E(B * x, Bx);
+  TEST_CL2E(C * y, Cy);
+  TEST_CL2E(D * y, Dy);
 
+  TEST_CL2E(u * A, uA);
+  TEST_CL2E(u * B, uB);
+  TEST_CL2E(v * C, vC);
+  TEST_CL2E(v * D, vD);
+
+  printf("\n===== Matrix - Scalar Arithmetic =====\n");
+  TEST_CL2E(A + PI, PIpA);
+  // TEST_CL2E(PI - B, PImB);
+  TEST_CL2E(2.718281828f * C, eC);
+  TEST_CL2E(D / 2.718281828f, D_over_e);
 }
 
 void compareL2error(const mat& m, const mat& ref) {
@@ -103,10 +113,10 @@ void compareL2error(const mat& m, const mat& ref) {
   checkErrorIsAcceptable(error);
 }
 
-/*void compareL2error(const vec& v, const vec& ref) {
+void compareL2error(const vec& v, const vec& ref) {
   float error = norm(v - ref) / norm(ref);
   checkErrorIsAcceptable(error);
-}*/
+}
 
 void checkErrorIsAcceptable(double error) {
   const float EPS = 1e-6;
