@@ -48,7 +48,7 @@ device_matrix<T>::device_matrix(const string& filename): _rows(0), _cols(0), _da
 template <typename T>
 device_matrix<T>::device_matrix(const device_matrix<T>& source): _rows(source._rows), _cols(source._cols), _data(NULL) {
   _init();
-  CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyHostToHost));
+  CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice));
 }
 
 // Constructor from Host Matrix
@@ -81,8 +81,18 @@ device_matrix<T>::~device_matrix() {
 // ===========================
 
 // ===== Addition =====
-// device_matrix<T>& operator += (T val) { return *this; } 
-// device_matrix<T> operator + (T val) const { return *this; }
+template <typename T>
+device_matrix<T>& device_matrix<T>::operator += (T val) {
+  // TODO
+  return *this;
+} 
+
+template <typename T>
+device_matrix<T> device_matrix<T>::operator + (T val) const {
+  printf("\33[33m[Warning]\33[0m operator + haven't implemented yet \n");
+  // TODO
+  return *this;
+}
 
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator += (const device_matrix<T>& rhs) {
@@ -98,8 +108,17 @@ device_matrix<T> device_matrix<T>::operator + (const device_matrix<T>& rhs) cons
 }
 
 // ===== Substraction =====
-// device_matrix<T>& operator -= (T val) { return *this; }
-// device_matrix<T> operator - (T val) const { return *this; }
+template <typename T>
+device_matrix<T>& device_matrix<T>::operator -= (T val) {
+  // TODO
+  return *this;
+}
+
+template <typename T>
+device_matrix<T> device_matrix<T>::operator - (T val) const {
+  // TODO
+  return *this;
+}
 
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator -= (const device_matrix<T>& rhs) {
