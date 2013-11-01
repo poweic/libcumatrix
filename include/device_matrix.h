@@ -1,9 +1,14 @@
 #ifndef __DEVICE_MATRIX_H__
 #define __DEVICE_MATRIX_H__
 
-#include <matrix.h>
 #include <cassert>
 #include <string>
+using namespace std;
+
+#ifdef HAS_HOST_MATRIX
+#include <matrix.h>
+#define host_matrix Matrix2D
+#endif
 
 #include <thrust/transform_reduce.h>
 #include <thrust/functional.h>
@@ -14,11 +19,8 @@
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
 #include <helper_cuda.h>
-using namespace std;
 
 #define CCE(x) checkCudaErrors(x)
-
-#define host_matrix Matrix2D
 #define STRIDE (sizeof(T) / sizeof(float))
 
 class CUBLAS_HANDLE {
@@ -45,9 +47,13 @@ public:
   // Copy Constructor 
   device_matrix(const device_matrix<T>& source);
 
+#ifdef HAS_HOST_MATRIX
   // Constructor from Host Matrix
   device_matrix(const host_matrix<T>& h_matrix);
+  operator host_matrix<T>() const;
+#endif
 
+  // Destructor
   ~device_matrix();
 
   // ===========================
@@ -55,15 +61,15 @@ public:
   // ===========================
   
   // ===== Addition =====
-  // device_matrix<T>& operator += (T val) { return *this; } 
-  // device_matrix<T> operator + (T val) const { return *this; }
+  device_matrix<T>& operator += (T val);
+  device_matrix<T> operator + (T val) const;
   
   device_matrix<T>& operator += (const device_matrix<T>& rhs);
   device_matrix<T> operator + (const device_matrix<T>& rhs) const;
 
   // ===== Substraction =====
-  // device_matrix<T>& operator -= (T val) { return *this; }
-  // device_matrix<T> operator - (T val) const { return *this; }
+  device_matrix<T>& operator -= (T val);
+  device_matrix<T> operator - (T val) const;
   
   device_matrix<T>& operator -= (const device_matrix<T>& rhs);
   device_matrix<T> operator - (const device_matrix<T>& rhs) const;
@@ -84,8 +90,6 @@ public:
   device_matrix<T>& operator *= (const device_matrix<T>& rhs);
   device_matrix<T> operator * (const device_matrix<T>& rhs) const;
 
-  operator host_matrix<T>() const;
-
   template <typename S>
   friend void swap(device_matrix<S>& lhs, device_matrix<S>& rhs);
 
@@ -102,7 +106,7 @@ public:
 
   void _init();
   void resize(size_t r, size_t c);
-  void print(size_t precision = 5) const ;
+  void print(FILE* fid = stdout) const;
 
   void fillwith(T val) {
     cudaMemset(_data, 0, _rows * _cols * sizeof(T));
@@ -112,7 +116,7 @@ public:
   size_t getRows() const { return _rows; }
   size_t getCols() const { return _cols; }
   T* getData() const { return _data; }
-  void saveas(const string& filename) const;
+  void save(const string& filename) const;
 
   static CUBLAS_HANDLE _handle;
 
@@ -137,10 +141,10 @@ void swap(device_matrix<T>& lhs, device_matrix<T>& rhs) {
 template <typename T>
 CUBLAS_HANDLE device_matrix<T>::_handle;
 
-typedef device_matrix<float> dmat;
-void sgemm(const dmat& A, const dmat& B, dmat& C, float alpha = 1.0, float beta = 0.0);
-void sgeam(const dmat& A, const dmat& B, dmat& C, float alpha = 1.0, float beta = 1.0);
-float snrm2(const dmat& A);
+typedef device_matrix<float> dfmat;
+void sgemm(const dfmat& A, const dfmat& B, dfmat& C, float alpha = 1.0, float beta = 0.0);
+void sgeam(const dfmat& A, const dfmat& B, dfmat& C, float alpha = 1.0, float beta = 1.0);
+float snrm2(const dfmat& A);
 
 template <typename T>
 device_matrix<T> operator * (T alpha, const device_matrix<T>& m) {

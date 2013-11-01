@@ -6,8 +6,13 @@
 #include <cstdlib>
 #include <limits>
 #include <map>
+#include <algorithm>
+#define PI 3.14159265359
 
+#ifdef HAS_HOST_MATRIX
 #include <matrix.h>
+#endif
+
 #include <functional.inl>
 
 namespace ext {
@@ -20,7 +25,7 @@ namespace ext {
 
     fs.precision(6);
     fs << std::scientific;
-    foreach (i, v)
+    for(size_t i=0; i<v.size(); ++i)
       fs << v[i] << endl;
 
     fs.close();
@@ -48,23 +53,22 @@ namespace ext {
   template <typename T>
   T sum(const vector<T>& v) {
     T s = 0;
-    foreach (i, v)
+    for(size_t i=0; i<v.size(); ++i)
       s += v[i];
     return s;
   }
 
-  // =================================
-  // ===== Summation over Vector =====
-  // =================================
+#ifdef HAS_HOST_MATRIX
   template <typename T>
   T sum(const Matrix2D<T>& m) {
     T s = 0;
-    range ( i, m.getRows() )
-      range ( j, m.getCols() )
+    for (size_t i=0; i<m.getRows(); ++i)
+      for (size_t j=0; j<m.getCols(); ++j)
 	s += m[i][j];
       
     return s;
   }
+#endif
 
   // ==================================
   // ===== First Order Difference =====
@@ -72,7 +76,8 @@ namespace ext {
   template <typename T>
   vector<T> diff1st(const vector<T>& v) {
     vector<T> diff(v.size() - 1);
-    foreach (i, diff)
+
+    for (size_t i=0; i<diff.size(); ++i)
       diff[i] = v[i+1] - v[i];
     return diff;
   }
@@ -124,12 +129,13 @@ namespace ext {
   vector<T> randn(size_t size) {
     vector<T> v(size);
 
-    foreach (i, v)
+    for (size_t i=0; i<v.size(); ++i)
       v[i] = randn<T>(0, 1);
 
     return v;
   }
 
+#ifdef HAS_HOST_MATRIX
   template <typename T>
   void randn(Matrix2D<T>& m) {
 
@@ -137,6 +143,7 @@ namespace ext {
       for (size_t j=0; j<m.getCols(); ++j)
 	m[i][j] = randn<T>(0, 1);
   }
+#endif
 
   // ==========================
   // ===== Uniform Random =====
@@ -150,12 +157,13 @@ namespace ext {
   vector<T> rand(size_t size) {
     vector<T> v(size);
 
-    foreach (i, v)
+    for (size_t i=0; i<v.size(); ++i)
       v[i] = rand01<T>();
 
     return v;
   }
 
+#ifdef HAS_HOST_MATRIX
   template <typename T>
   void rand(Matrix2D<T>& m) {
 
@@ -163,12 +171,13 @@ namespace ext {
       for (size_t j=0; j<m.getCols(); ++j)
 	m[i][j] = rand01<T>();
   }
+#endif
 
   template <typename T>
   T max(const std::vector<T>& v) {
     T maximum = v[0];
 
-    foreach (i, v)
+    for (size_t i=0; i<v.size(); ++i)
       if (v[i] > maximum)
 	maximum = v[i];
     return maximum;
@@ -177,7 +186,7 @@ namespace ext {
   template <typename T>
   void normalize(std::vector<T>& v) {
     T sum = ext::sum(v);
-    foreach (i, v)
+    for (size_t i=0; i<v.size(); ++i)
       v[i] /= sum;
   }
 
@@ -188,14 +197,14 @@ namespace ext {
 
     vector<size_t> h;
     std::map<T, size_t> histogram;
-    foreach (i, v) {
+    for (size_t i=0; i<v.size(); ++i) {
       if ( histogram.count(v[i]) == 0)
 	histogram[v[i]] = 0;
       ++histogram[v[i]];
     }
 
     h.resize(max + 1);
-    foreach (i, h)
+    for (size_t i=0; i<h.size(); ++i)
       h[i] = 0;
 
     typename std::map<T, size_t>::iterator it = histogram.begin();
@@ -215,10 +224,10 @@ namespace ext {
     std::map<T, size_t> cdf;
 
     T cumulation = 0;
-    foreach (i, pdf)
+    for (size_t i=0; i<pdf.size(); ++i)
       cdf[cumulation += pdf[i]] = i;
 
-    foreach (i, sampledData) {
+    for (size_t i=0; i<sampledData.size(); ++i) {
       float linear = rand01<float>();
       sampledData[i] = cdf.upper_bound(linear)->second;
     }
@@ -233,11 +242,11 @@ namespace ext {
   vector<T> softmax(const vector<T>& x) {
     vector<T> s(x.size());
 
-    foreach (i, s)
+    for (size_t i=0; i<s.size(); ++i)
       s[i] = exp(x[i]);
 
     T denominator = 1.0 / ext::sum(s);
-    foreach (i, s)
+    for (size_t i=0; i<s.size(); ++i)
       s[i] *= denominator;
 
     return s;
@@ -253,6 +262,8 @@ namespace ext {
     return s;
   }
 
+
+#ifdef HAS_HOST_MATRIX
   template <typename T>
   Matrix2D<T> sigmoid(const Matrix2D<T>& x) {
     Matrix2D<T> s(x.getRows(), x.getCols());
@@ -266,13 +277,6 @@ namespace ext {
   // ================================
   // ===== Biased after Sigmoid =====
   // ================================
-  template <typename T>
-  vector<T> b_sigmoid(const vector<T>& x) {
-    vector<T> s(x.size() + 1);
-    std::transform(x.begin(), x.end(), s.begin(), func::sigmoid<T>());
-    s.back() = 1.0;
-    return s;
-  }
 
   template <typename T>
   Matrix2D<T> b_sigmoid(const Matrix2D<T>& x) {
@@ -284,6 +288,15 @@ namespace ext {
       s[i][x.getCols()] = 1.0;
     }
 
+    return s;
+  }
+#endif
+
+  template <typename T>
+  vector<T> b_sigmoid(const vector<T>& x) {
+    vector<T> s(x.size() + 1);
+    std::transform(x.begin(), x.end(), s.begin(), func::sigmoid<T>());
+    s.back() = 1.0;
     return s;
   }
 
