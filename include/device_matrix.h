@@ -57,15 +57,15 @@ public:
   // ===========================
   
   // ===== Addition =====
-  // device_matrix<T>& operator += (T val) { return *this; } 
-  // device_matrix<T> operator + (T val) const { return *this; }
+  device_matrix<T>& operator += (T val);
+  device_matrix<T> operator + (T val) const;
   
   device_matrix<T>& operator += (const device_matrix<T>& rhs);
   device_matrix<T> operator + (const device_matrix<T>& rhs) const;
 
   // ===== Substraction =====
-  // device_matrix<T>& operator -= (T val) { return *this; }
-  // device_matrix<T> operator - (T val) const { return *this; }
+  device_matrix<T>& operator -= (T val);
+  device_matrix<T> operator - (T val) const;
   
   device_matrix<T>& operator -= (const device_matrix<T>& rhs);
   device_matrix<T> operator - (const device_matrix<T>& rhs) const;
