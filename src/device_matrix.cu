@@ -41,8 +41,6 @@ device_matrix<T>::device_matrix(const string& filename): _rows(0), _cols(0), _da
   _init();
   CCE(cudaMemcpy(_data, data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice));
   delete [] data;
-  // host_matrix<T> hm(filename);
-  // *this = device_matrix<T>(hm);
 }
 // Copy Constructor 
 template <typename T>
@@ -51,6 +49,7 @@ device_matrix<T>::device_matrix(const device_matrix<T>& source): _rows(source._r
   CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice));
 }
 
+#ifdef HAS_HOST_MATRIX
 // Constructor from Host Matrix
 template <typename T>
 device_matrix<T>::device_matrix(const host_matrix<T>& h_matrix): _rows(h_matrix.getRows()), _cols(h_matrix.getCols()), _data(NULL) {
@@ -70,6 +69,25 @@ device_matrix<T>::device_matrix(const host_matrix<T>& h_matrix): _rows(h_matrix.
 
   delete [] h_data;
 }
+
+template <typename T>
+device_matrix<T>::operator host_matrix<T>() const {
+
+  host_matrix<T> cm_h_matrix(_cols, _rows);
+
+  size_t n = _rows * _cols;
+  T* h_data = new T[n];
+
+  CCE(cublasGetVector(n, sizeof(T), _data, STRIDE, h_data, STRIDE));
+
+  for (size_t i=0; i<_cols; ++i)
+    memcpy(cm_h_matrix[i], h_data + i*_rows, sizeof(T) * _rows);
+
+  delete [] h_data;
+
+  return ~cm_h_matrix;
+}
+#endif
 
 template <typename T>
 device_matrix<T>::~device_matrix() {
@@ -159,18 +177,6 @@ device_matrix<T> device_matrix<T>::operator * (T alpha) const {
   return result *= alpha;
 }
 
-// ===== Matrix-Vector Multiplication =====
-/*template <typename T>
-thrust::device_vector<T> operator * (const thrust::device_vector<T>& row_vector, const device_matrix<T>& m) {
-  assert(row_vector.size() == m.getRows());
-
-  device_matrix<T> res(1, m.getCols());
-}
-
-template <typename T>
-thrust::device_vector<T> operator * (const device_matrix<T>& m, const thrust::device_vector<T>& col_vector) {
-  assert(m.getCols() == col_vector.size());
-}*/
 // ===== Matrix-Matrix Multiplication =====
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator *= (const device_matrix<T>& rhs) {
@@ -183,25 +189,6 @@ device_matrix<T> device_matrix<T>::operator * (const device_matrix<T>& rhs) cons
   device_matrix<T> result(_rows, rhs._cols);
   sgemm(*this, rhs, result);
   return result;
-}
-
-// ==================================================
-template <typename T>
-device_matrix<T>::operator host_matrix<T>() const {
-
-  host_matrix<T> cm_h_matrix(_cols, _rows);
-
-  size_t n = _rows * _cols;
-  T* h_data = new T[n];
-
-  CCE(cublasGetVector(n, sizeof(T), _data, STRIDE, h_data, STRIDE));
-
-  for (size_t i=0; i<_cols; ++i)
-    memcpy(cm_h_matrix[i], h_data + i*_rows, sizeof(T) * _rows);
-
-  delete [] h_data;
-
-  return ~cm_h_matrix;
 }
 
 // Operator Assignment:
@@ -229,17 +216,8 @@ void device_matrix<T>::resize(size_t r, size_t c) {
 }
 
 template <typename T>
-void device_matrix<T>::print(size_t precision) const {
-  host_matrix<T> hm(*this);
-  hm.print(precision);
-}
+void device_matrix<T>::print(FILE* fid) const {
 
-template <typename T>
-void device_matrix<T>::save(const string& filename) const {
-  FILE* fid = fopen(filename.c_str(), "w");
-  if (fid == NULL)
-    return;
-  
   T* data = new T[size()];
   CCE(cudaMemcpy(data, _data, sizeof(T) * size(), cudaMemcpyDeviceToHost));
 
@@ -250,10 +228,16 @@ void device_matrix<T>::save(const string& filename) const {
   }
 
   delete [] data;
-  fclose(fid);
+}
 
-  //host_matrix<T> hm(*this);
-  //hm.saveas(filename);
+template <typename T>
+void device_matrix<T>::save(const string& filename) const {
+  FILE* fid = fopen(filename.c_str(), "w");
+  if (fid == NULL)
+    return;
+
+  print(fid);
+  fclose(fid);
 }
 // ++++++++++++++++++++++++++++++++++++++++++++
 // +++++ Template Explicit Initialization +++++

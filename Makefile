@@ -7,8 +7,6 @@ NVCC=nvcc -arch=sm_21 -w
 CUDA_ROOT=/usr/local/cuda
 THRUST_INCLUDE=/share/Local
 
-#SOURCES=utility.cpp
-
 EXECUTABLES=
 EXAMPLE_PROGRAM=benchmark test
  
@@ -26,7 +24,7 @@ vpath %.cu src/
 
 OBJ=$(addprefix obj/,$(SOURCES:.cpp=.o))
 
-LIBRARY= -lmatrix
+LIBRARY=
 LIBRARY_PATH=-L/usr/local/boton/lib/
 INCLUDE= -I include/\
 	 -I /usr/local/boton/include/

@@ -67,9 +67,6 @@ void testing() {
   mat yu("data/yu.mat");
   mat yv("data/yv.mat");
 
-
-  Matrix2D<float> hA(A);
-
   printf("A : %lu by %lu \n", A.getRows(), A.getCols());
   printf("A : %lu by %lu \n", C.getRows(), C.getCols());
   printf("AC: %lu by %lu \n", AC.getRows(), AC.getCols());
