@@ -1,8 +1,11 @@
 #ifndef __TEMPLATE_FUNCTIONAL_H_
 #define __TEMPLATE_FUNCTIONAL_H_
 
-#ifndef __CUDACC__
+#ifndef __host__
 #define __host__
+#endif
+
+#ifndef __device__
 #define __device__
 #endif
 // ===============================

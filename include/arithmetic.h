@@ -6,13 +6,14 @@
 #include <algorithm>
 #include <functional>
 
-#ifdef __GXX_EXPERIMENTAL_CXX0X__
-#define ASSERT_NOT_SCALAR(T) {static_assert(std::is_scalar<T>::value, "val must be scalar");} 
-#else
-#define ASSERT_NOT_SCALAR(T) {}
-#endif
-
 using namespace std;
+
+#define VECTOR std::vector
+#define WHERE std
+#include <functional.inl>
+#include <arithmetic.inl>
+#undef VECTOR
+#undef WHERE
 
 // =====================================
 // ===== Matrix - Vector Operators =====
@@ -64,13 +65,6 @@ vector<T> operator * (const vector<T>& row_vector, const Matrix2D<T>& A) {
 
   return y;
 }
-
-#define VECTOR std::vector
-#define WHERE std
-#include <functional.inl>
-#include <blas.inl>
-#undef VECTOR
-#undef WHERE
 
 template <typename T>
 Matrix2D<T> operator & (const Matrix2D<T>& A, const Matrix2D<T>& B) {
