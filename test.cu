@@ -1,5 +1,4 @@
 #include <iostream>
-#include <matrix.h>
 
 #include <device_matrix.h>
 #include <device_math_ext.h>
