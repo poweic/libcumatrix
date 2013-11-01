@@ -10,7 +10,7 @@ THRUST_INCLUDE=/share/Local
 #SOURCES=utility.cpp
 
 EXECUTABLES=
-EXAMPLE_PROGRAM=example
+EXAMPLE_PROGRAM=example test
  
 .PHONY: debug all o3 example ctags
 all: $(EXECUTABLES) $(EXAMPLE_PROGRAM) ctags
@@ -43,6 +43,8 @@ CPPFLAGS= -std=c++0x $(CFLAGS) $(INCLUDE)
 example: $(OBJ) example.cpp obj/device_matrix.o
 	$(CXX) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
 
+test: $(OBJ) test.cpp obj/device_matrix.o
+	$(CXX) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
 # +==============================+
 # +===== Other Phony Target =====+
 # +==============================+
