@@ -47,6 +47,7 @@ namespace ext {
     return thrust::reduce(m.getData(), m.getData() + m.size(), (T) 0, thrust::plus<T>());
   }
 
+#ifdef HAS_HOST_MATRIX
   // ================
   // ===== Rand =====
   // ================
@@ -63,6 +64,7 @@ namespace ext {
     ext::randn(h_m);
     m = device_matrix<T>(h_m);
   }
+#endif
   // ===================
   // ===== SoftMax =====
   // ===================
