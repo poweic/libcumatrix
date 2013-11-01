@@ -1,5 +1,4 @@
 #include <iostream>
-#include <color.h>
 
 #include <device_matrix.h>
 
