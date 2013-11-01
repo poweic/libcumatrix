@@ -1,28 +1,20 @@
 #include <iostream>
-#include <color.h>
+#include <matrix.h>
 
 #include <device_matrix.h>
+#include <device_math_ext.h>
+#define TEST_CL2E(x, y) {printf("checking "#x" ... "); compareL2error((x), (y));}
 
 using namespace std;
 
 typedef device_matrix<float> mat;
+typedef thrust::device_vector<float> vec;
 
-struct Timer {
-  Timer();
-  void tic();
-  float toc();
-  cudaEvent_t start, stop;
-};
-
-void showGFlops(double flops, float time);
 void testing();
 void compareL2error(const mat& m, const mat& ref);
-void benchmark();
 
 int main (int argc, char* argv[]) {
-
-  benchmark();
-
+  testing();
   return 0;
 }
 
@@ -30,60 +22,85 @@ void testing() {
   mat A("data/A.mat");
   mat B("data/B.mat");
   mat C("data/C.mat");
+  mat D("data/D.mat");
 
-  compareL2error(A*B, C);
+  vec x = ext::load<float>("data/x.vec");
+  vec y = ext::load<float>("data/y.vec");
+  vec u = ext::load<float>("data/u.vec");
+  vec v = ext::load<float>("data/v.vec");
+  // mat x("data/x.vec");
+  // mat y("data/y.vec");
+  // mat u("data/u.vec");
+  // mat v("data/v.vec");
+
+  mat ApB("data/A+B.mat");
+  mat AmB("data/A-B.mat");
+  mat CmD("data/C-D.mat");
+  mat CpD("data/C+D.mat");
+
+  mat AC("data/AC.mat");
+  mat AD("data/AD.mat");
+  mat BC("data/BC.mat");
+  mat BD("data/BD.mat");
+
+  mat Ax("data/Ax.vec");
+  mat Bx("data/Bx.vec");
+  mat Cy("data/Cy.vec");
+  mat Dy("data/Dy.vec");
+
+  mat uA("data/uA.vec");
+  mat uB("data/uB.vec");
+  mat uC("data/vC.vec");
+  mat uD("data/vD.vec");
+
+  mat xu("data/xu.mat");
+  mat xv("data/xv.mat");
+  mat yu("data/yu.mat");
+  mat yv("data/yv.mat");
+
+  mat PIpA("data/pi+A.mat");
+  mat PImB("data/pi-B.mat");
+  mat eC("data/eC.mat");
+  mat D_over_e("data/D_over_e.mat");
+
+  mat uAx("data/uAx.scalar");
+  mat uBx("data/uBx.scalar");
+  mat vCy("data/vCy.scalar");
+  mat vDy("data/vDy.scalar");
+
+  Matrix2D<float> hA(A);
+
+  printf("A : %lu by %lu \n", A.getRows(), A.getCols());
+  printf("A : %lu by %lu \n", C.getRows(), C.getCols());
+  printf("AC: %lu by %lu \n", AC.getRows(), AC.getCols());
+
+  printf("\n===== Matrix Addition =====\n");
+  TEST_CL2E(A + B, ApB);
+  TEST_CL2E(A - B, AmB);
+  TEST_CL2E(C + D, CpD);
+  TEST_CL2E(C - D, CmD);
+
+  printf("\n===== Matrix - Matrix Multiplication =====\n");
+  TEST_CL2E(A * C, AC);
+  TEST_CL2E(A * D, AD);
+  TEST_CL2E(B * C, BC);
+  TEST_CL2E(B * D, BD);
+
+  printf("\n===== Matrix - Vector Multiplication =====\n");
+  vec c = A*x;
+
 }
 
 void compareL2error(const mat& m, const mat& ref) {
+  const float EPS = 1e-6;
   float error = snrm2(m - ref) / snrm2(ref);
-  printf("error = %.7e \n", error);
+  if (error < EPS)
+    printf("\33[32m[ OK ]\33[0m \n");
+  else
+    printf("error = %.4e > EPS (%.4e) \33[31m[FAILED]\33[0m\n", error, EPS);
 }
 
-void benchmark() {
 
-  mat A("data/A.mat");
-  mat B("data/B.mat");
-  mat C;
 
-  Timer timer;
-  timer.tic();
 
-  int nIter = 128;
-  for (int i=0; i<nIter; ++i)
-    sgemm(A, B, C);
-
-  float avgTime = timer.toc() / nIter;
-  double flops = 2.0 * (double) A.getRows() * (double) A.getCols() * (double) B.getCols();
-  showGFlops(flops, avgTime);
-
-  Timer timer2;
-  timer2.tic();
-  for (int i=0; i<nIter; ++i)
-    mat C(A * B);
-
-  avgTime = timer2.toc() / nIter;
-  showGFlops(flops, avgTime);
-}
-
-void showGFlops(double flops, float time) {
-  double gigaFlops = (flops * 1.0e-9f) / (time / 1000.0f);
-  printf("Performance= %.2f GFlop/s, Time= %.3f msec, Size= %.0f Ops\n", gigaFlops, time, flops);
-}
-
-Timer::Timer() {
-  CCE(cudaEventCreate(&start));
-  CCE(cudaEventCreate(&stop));
-}
-
-void Timer::tic() {
-  CCE(cudaEventRecord(start, NULL));
-}
-
-float Timer::toc() {
-  CCE(cudaEventRecord(stop, NULL));
-  CCE(cudaEventSynchronize(stop));
-
-  float diff = 0.0f;
-  CCE(cudaEventElapsedTime(&diff , start, stop));
-}
 

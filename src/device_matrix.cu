@@ -1,7 +1,5 @@
 #include <device_matrix.h>
 #define mylog(token) {cout << #token " = " << token << endl;}
-#include <blas.h>
-#include <device_blas.h>
 
 template <typename T>
 device_matrix<T>::device_matrix(): _rows(0), _cols(0), _data(NULL) { }
@@ -116,12 +114,16 @@ device_matrix<T> device_matrix<T>::operator * (T alpha) const {
 
 // ===== Matrix-Vector Multiplication =====
 /*template <typename T>
-thrust::device_vector<T> device_matrix<T>::operator * (const thrust::device_vector<T>& rhs) const {
-  assert(_cols == rhs.size());
-  thrust::device_vector<T> result(_rows);
-  return result;
-}*/
+thrust::device_vector<T> operator * (const thrust::device_vector<T>& row_vector, const device_matrix<T>& m) {
+  assert(row_vector.size() == m.getRows());
 
+  device_matrix<T> res(1, m.getCols());
+}
+
+template <typename T>
+thrust::device_vector<T> operator * (const device_matrix<T>& m, const thrust::device_vector<T>& col_vector) {
+  assert(m.getCols() == col_vector.size());
+}*/
 // ===== Matrix-Matrix Multiplication =====
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator *= (const device_matrix<T>& rhs) {
@@ -195,15 +197,15 @@ void device_matrix<T>::saveas(const string& filename) const {
 // ++++++++++++++++++++++++++++++++++++++++++++
 template class device_matrix<float>;
 
-float snrm2(const dmat& A) {
+float snrm2(const dfmat& A) {
   float result;
   cublasStatus_t status;
-  status = cublasSnrm2(dmat::_handle.get(), A.size(), A.getData(), 1, &result);
+  status = cublasSnrm2(dfmat::_handle.get(), A.size(), A.getData(), 1, &result);
   CCE(status);
   return result;
 }
 
-void sgemm(const dmat& A, const dmat& B, dmat& C, float alpha, float beta) {
+void sgemm(const dfmat& A, const dfmat& B, dfmat& C, float alpha, float beta) {
   // Perform C = αA*B + βC, not transpose on A and B
   size_t m = A._rows;
   size_t n = B._cols;
@@ -216,12 +218,12 @@ void sgemm(const dmat& A, const dmat& B, dmat& C, float alpha, float beta) {
   int ldc = C._rows;
 
   cublasStatus_t status;
-  status = cublasSgemm(dmat::_handle.get(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha, A._data, lda, B._data, ldb, &beta, C._data, ldc);
+  status = cublasSgemm(dfmat::_handle.get(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha, A._data, lda, B._data, ldb, &beta, C._data, ldc);
 
   CCE(status);
 }
 
-void sgeam(const dmat& A, const dmat& B, dmat& C, float alpha, float beta) {
+void sgeam(const dfmat& A, const dfmat& B, dfmat& C, float alpha, float beta) {
   // Perform C = αA + βB, not transpose on A and B
   assert(A._rows == B._rows && A._cols == B._cols);
   
@@ -234,6 +236,6 @@ void sgeam(const dmat& A, const dmat& B, dmat& C, float alpha, float beta) {
   int ldc = C._rows;
 
   cublasStatus_t status;
-  status = cublasSgeam(dmat::_handle.get(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, &alpha, A._data, lda, &beta, B._data, ldb, C._data, ldc);
+  status = cublasSgeam(dfmat::_handle.get(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, &alpha, A._data, lda, &beta, B._data, ldb, C._data, ldc);
   CCE(status);
 }

@@ -1,3 +1,9 @@
+#ifdef __GXX_EXPERIMENTAL_CXX0X__
+#define ASSERT_NOT_SCALAR(T) {static_assert(std::is_scalar<T>::value, "val must be scalar");} 
+#else
+#define ASSERT_NOT_SCALAR(T) {}
+#endif
+
 // =====================================
 // ===== Multiplication Assignment =====
 // =====================================

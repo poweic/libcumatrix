@@ -1,9 +1,12 @@
 #ifndef __DEVICE_MATRIX_H__
 #define __DEVICE_MATRIX_H__
 
-#include <matrix.h>
 #include <cassert>
 #include <string>
+using namespace std;
+
+#include <matrix.h>
+#define host_matrix Matrix2D
 
 #include <thrust/transform_reduce.h>
 #include <thrust/functional.h>
@@ -14,11 +17,8 @@
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
 #include <helper_cuda.h>
-using namespace std;
 
 #define CCE(x) checkCudaErrors(x)
-
-#define host_matrix Matrix2D
 #define STRIDE (sizeof(T) / sizeof(float))
 
 class CUBLAS_HANDLE {
@@ -47,7 +47,9 @@ public:
 
   // Constructor from Host Matrix
   device_matrix(const host_matrix<T>& h_matrix);
+  operator host_matrix<T>() const;
 
+  // Destructor
   ~device_matrix();
 
   // ===========================
@@ -83,8 +85,6 @@ public:
   // ===== Matrix-Matrix Multiplication =====
   device_matrix<T>& operator *= (const device_matrix<T>& rhs);
   device_matrix<T> operator * (const device_matrix<T>& rhs) const;
-
-  operator host_matrix<T>() const;
 
   template <typename S>
   friend void swap(device_matrix<S>& lhs, device_matrix<S>& rhs);
@@ -137,10 +137,10 @@ void swap(device_matrix<T>& lhs, device_matrix<T>& rhs) {
 template <typename T>
 CUBLAS_HANDLE device_matrix<T>::_handle;
 
-typedef device_matrix<float> dmat;
-void sgemm(const dmat& A, const dmat& B, dmat& C, float alpha = 1.0, float beta = 0.0);
-void sgeam(const dmat& A, const dmat& B, dmat& C, float alpha = 1.0, float beta = 1.0);
-float snrm2(const dmat& A);
+typedef device_matrix<float> dfmat;
+void sgemm(const dfmat& A, const dfmat& B, dfmat& C, float alpha = 1.0, float beta = 0.0);
+void sgeam(const dfmat& A, const dfmat& B, dfmat& C, float alpha = 1.0, float beta = 1.0);
+float snrm2(const dfmat& A);
 
 template <typename T>
 device_matrix<T> operator * (T alpha, const device_matrix<T>& m) {

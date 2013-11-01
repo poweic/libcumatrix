@@ -1,7 +1,7 @@
 CC=gcc
 CXX=g++-4.6
 CFLAGS=
-NVCCFLAGS=-Xcompiler "-fdump-tree-nrv"
+#NVCCFLAGS=-Xcompiler "-fdump-tree-nrv"
 NVCC=nvcc -arch=sm_21 -w
 
 CUDA_ROOT=/usr/local/cuda
@@ -10,9 +10,9 @@ THRUST_INCLUDE=/share/Local
 #SOURCES=utility.cpp
 
 EXECUTABLES=
-EXAMPLE_PROGRAM=example test
+EXAMPLE_PROGRAM=benchmark test
  
-.PHONY: debug all o3 example ctags
+.PHONY: debug all o3 ctags
 all: $(EXECUTABLES) $(EXAMPLE_PROGRAM) ctags
 
 o3: CFLAGS+=-O3
@@ -40,10 +40,10 @@ CUDA_INCLUDE=$(INCLUDE) \
 
 CPPFLAGS= -std=c++0x $(CFLAGS) $(INCLUDE)
 
-example: $(OBJ) example.cpp obj/device_matrix.o
+benchmark: $(OBJ) benchmark.cpp obj/device_matrix.o obj/device_arithmetic.o
 	$(CXX) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
 
-test: $(OBJ) test.cpp obj/device_matrix.o
+test: $(OBJ) test.cpp obj/device_matrix.o obj/device_arithmetic.o
 	$(CXX) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
 # +==============================+
 # +===== Other Phony Target =====+
