@@ -67,6 +67,17 @@ dvec<T> operator * (const dvec<T>& v, const dmat<T>& m) {
 }
 
 template <typename T>
+dmat<T> operator + (T val, const dmat<T>& m) {
+  return m + val;
+}
+
+template <typename T>
+dmat<T> operator - (T val, const dmat<T>& m) {
+  // TODO
+  return dmat<T>();
+}
+
+template <typename T>
 T norm(const thrust::host_vector<T>& v) {
   return std::sqrt( thrust::transform_reduce(v.begin(), v.end(), func::square<T>(), 0, thrust::plus<T>()) );
 }
@@ -121,15 +132,15 @@ dmat<T> operator & (const dvec<T>& v, const dmat<T>& m) {
 }
 
 #define EXPLICITLY_INSTANTIATE(T) \
-template dmat<T> operator *<T> (const dvec<T>& col_vector, const dvec<T>& row_vector); \
-template dvec<T> operator &<T> (const dvec<T>& x, const dvec<T>& y); \
-template dvec<T> operator *<T> (const dmat<T>& m, const dvec<T>& v); \
-template dvec<T> operator *<T> (const dvec<T>& v, const dmat<T>& m); \
-template T norm<T>(const thrust::host_vector<T>& v); \
-template T norm<T>(const thrust::device_vector<T>& v); \
-template void print<T>(const thrust::host_vector<T>& v); \
-template void print<T>(const thrust::device_vector<T>& v); \
-template dmat<T> operator & <T>(const dvec<T>& v, const dmat<T>& m);
+template T norm<T> (const thrust::host_vector<T>& v); \
+template T norm<T> (const thrust::device_vector<T>& v); \
+template void print<T> (const thrust::host_vector<T>& v); \
+template void print<T> (const thrust::device_vector<T>& v); \
+template dmat<T> operator & <T> (const dvec<T>& v, const dmat<T>& m); \
+template dmat<T> operator * <T> (const dvec<T>& col_vector, const dvec<T>& row_vector); \
+template dvec<T> operator & <T> (const dvec<T>& x, const dvec<T>& y); \
+template dvec<T> operator * <T> (const dmat<T>& m, const dvec<T>& v); \
+template dvec<T> operator * <T> (const dvec<T>& v, const dmat<T>& m);
 
 EXPLICITLY_INSTANTIATE(float);
 
