@@ -7,8 +7,12 @@
 #include <limits>
 #include <map>
 #include <algorithm>
+#define PI 3.14159265359
 
+#ifdef HAS_HOST_MATRIX
 #include <matrix.h>
+#endif
+
 #include <functional.inl>
 
 namespace ext {
@@ -54,9 +58,7 @@ namespace ext {
     return s;
   }
 
-  // =================================
-  // ===== Summation over Vector =====
-  // =================================
+#ifdef HAS_HOST_MATRIX
   template <typename T>
   T sum(const Matrix2D<T>& m) {
     T s = 0;
@@ -66,6 +68,7 @@ namespace ext {
       
     return s;
   }
+#endif
 
   // ==================================
   // ===== First Order Difference =====
@@ -132,6 +135,7 @@ namespace ext {
     return v;
   }
 
+#ifdef HAS_HOST_MATRIX
   template <typename T>
   void randn(Matrix2D<T>& m) {
 
@@ -139,6 +143,7 @@ namespace ext {
       for (size_t j=0; j<m.getCols(); ++j)
 	m[i][j] = randn<T>(0, 1);
   }
+#endif
 
   // ==========================
   // ===== Uniform Random =====
@@ -158,6 +163,7 @@ namespace ext {
     return v;
   }
 
+#ifdef HAS_HOST_MATRIX
   template <typename T>
   void rand(Matrix2D<T>& m) {
 
@@ -165,6 +171,7 @@ namespace ext {
       for (size_t j=0; j<m.getCols(); ++j)
 	m[i][j] = rand01<T>();
   }
+#endif
 
   template <typename T>
   T max(const std::vector<T>& v) {
@@ -255,6 +262,8 @@ namespace ext {
     return s;
   }
 
+
+#ifdef HAS_HOST_MATRIX
   template <typename T>
   Matrix2D<T> sigmoid(const Matrix2D<T>& x) {
     Matrix2D<T> s(x.getRows(), x.getCols());
@@ -268,13 +277,6 @@ namespace ext {
   // ================================
   // ===== Biased after Sigmoid =====
   // ================================
-  template <typename T>
-  vector<T> b_sigmoid(const vector<T>& x) {
-    vector<T> s(x.size() + 1);
-    std::transform(x.begin(), x.end(), s.begin(), func::sigmoid<T>());
-    s.back() = 1.0;
-    return s;
-  }
 
   template <typename T>
   Matrix2D<T> b_sigmoid(const Matrix2D<T>& x) {
@@ -286,6 +288,15 @@ namespace ext {
       s[i][x.getCols()] = 1.0;
     }
 
+    return s;
+  }
+#endif
+
+  template <typename T>
+  vector<T> b_sigmoid(const vector<T>& x) {
+    vector<T> s(x.size() + 1);
+    std::transform(x.begin(), x.end(), s.begin(), func::sigmoid<T>());
+    s.back() = 1.0;
     return s;
   }
 
