@@ -21,6 +21,9 @@ int main (int argc, char* argv[]) {
 }
 
 void testing() {
+  printf("Start testing...\n");
+
+  printf("Loading testing data...\n");
   mat A("data/A.mat");
   mat B("data/B.mat");
   mat C("data/C.mat");
@@ -41,18 +44,18 @@ void testing() {
   mat BC("data/BC.mat");
   mat BD("data/BD.mat");
 
-  vec Ax = ext::load<float>("data/Ax.vec");
-  vec Bx = ext::load<float>("data/Bx.vec");
-  vec Cy = ext::load<float>("data/Cy.vec");
-  vec Dy = ext::load<float>("data/Dy.vec");
+  mat Ax("data/Ax.vec");
+  mat Bx("data/Bx.vec");
+  mat Cy("data/Cy.vec");
+  mat Dy("data/Dy.vec");
 
-  vec uA = ext::load<float>("data/uA.vec");
-  vec uB = ext::load<float>("data/uB.vec");
-  vec vC = ext::load<float>("data/vC.vec");
-  vec vD = ext::load<float>("data/vD.vec");
+  mat uA("data/uA.vec");
+  mat uB("data/uB.vec");
+  mat vC("data/vC.vec");
+  mat vD("data/vD.vec");
 
-  mat PIpA("data/pi+A.mat");
-  mat PImB("data/pi-B.mat");
+  mat ApPI("data/A+pi.mat");
+  mat BmPI("data/B-pi.mat");
   mat eC("data/eC.mat");
   mat D_over_e("data/D_over_e.mat");
 
@@ -66,13 +69,15 @@ void testing() {
   mat yu("data/yu.mat");
   mat yv("data/yv.mat");
 
-  printf("A : %lu by %lu \n", A.getRows(), A.getCols());
-  printf("A : %lu by %lu \n", C.getRows(), C.getCols());
-  printf("AC: %lu by %lu \n", AC.getRows(), AC.getCols());
-
-  printf("\n===== FILE I/O Testing =====\n");
+  printf("\n===== FILE I/O =====\n");
   A.save("/tmp/cumatrix.mat");
   TEST_CL2E(mat("/tmp/cumatrix.mat"), A)
+
+  printf("\n===== Vector - Vector Multiplication =====\n");
+  TEST_CL2E(x * u, xu);
+  TEST_CL2E(x * v, xv);
+  TEST_CL2E(y * u, yu);
+  TEST_CL2E(y * v, yv);
 
   printf("\n===== Matrix Addition =====\n");
   TEST_CL2E(A + B, ApB);
@@ -80,13 +85,19 @@ void testing() {
   TEST_CL2E(C + D, CpD);
   TEST_CL2E(C - D, CmD);
 
+  printf("\n===== Matrix - Scalar Arithmetic =====\n");
+  TEST_CL2E(A + PI, ApPI);
+  TEST_CL2E(B - PI, BmPI);
+  TEST_CL2E(2.718281828f * C, eC);
+  TEST_CL2E(D / 2.718281828f, D_over_e);
+
   printf("\n===== Matrix - Matrix Multiplication =====\n");
   TEST_CL2E(A * C, AC);
   TEST_CL2E(A * D, AD);
   TEST_CL2E(B * C, BC);
   TEST_CL2E(B * D, BD);
 
-  printf("\n===== Matrix - Vector Multiplication =====\n");
+  printf("\n===== Matrix - Vector Multiplication (1) =====\n");
   TEST_CL2E(A * x, Ax);
   TEST_CL2E(B * x, Bx);
   TEST_CL2E(C * y, Cy);
@@ -97,11 +108,13 @@ void testing() {
   TEST_CL2E(v * C, vC);
   TEST_CL2E(v * D, vD);
 
-  printf("\n===== Matrix - Scalar Arithmetic =====\n");
-  TEST_CL2E(A + PI, PIpA);
-  // TEST_CL2E(PI - B, PImB);
-  TEST_CL2E(2.718281828f * C, eC);
-  TEST_CL2E(D / 2.718281828f, D_over_e);
+  printf("\n===== Matrix - Vector Multiplication (2) =====\n");
+  TEST_CL2E(u * A * x, uAx);
+  TEST_CL2E(u * B * x, uBx);
+  TEST_CL2E(v * C * y, vCy);
+  TEST_CL2E(v * D * y, vDy);
+
+  printf("\n[Done]\n");
 }
 
 void compareL2error(const mat& m, const mat& ref) {

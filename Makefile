@@ -38,10 +38,10 @@ CUDA_INCLUDE=$(INCLUDE) \
 
 CPPFLAGS= -std=c++0x $(CFLAGS) $(INCLUDE)
 
-benchmark: $(OBJ) benchmark.cpp obj/device_matrix.o obj/device_arithmetic.o
+benchmark: $(OBJ) benchmark.cpp obj/device_matrix.o
 	$(CXX) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
 
-test: $(OBJ) test.cu obj/device_matrix.o obj/device_arithmetic.o
+test: $(OBJ) test.cu obj/device_matrix.o
 	$(NVCC) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
 # +==============================+
 # +===== Other Phony Target =====+
