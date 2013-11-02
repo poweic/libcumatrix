@@ -2,6 +2,9 @@
 #define __DEVICE_BLAS_H_
 
 #include <device_matrix.h>
+#ifndef __CUDACC__
+#pragma message "\33[33mPotentially wrong compiler. Please use nvcc instead \33[0m"
+#endif
 
 // =====================================
 // ===== Vector - Scalar Operators =====
@@ -31,8 +34,8 @@ template <typename T> dmat<T> operator & (const dvec<T>& v, const dmat<T>& m);
 
 template <typename T> dmat<T> operator * (const dvec<T>& col_vector, const dvec<T>& row_vector);
 template <typename T> dvec<T> operator & (const dvec<T>& x, const dvec<T>& y);
-template <typename T> dvec<T> operator * (const dmat<T>& m, const dvec<T>& v);
-template <typename T> dvec<T> operator * (const dvec<T>& v, const dmat<T>& m);
+// template <typename T> dvec<T> operator * (const dmat<T>& m, const dvec<T>& v);
+// template <typename T> dvec<T> operator * (const dvec<T>& v, const dmat<T>& m);
 
 #undef dvec
 #undef dmat
