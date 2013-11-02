@@ -23,6 +23,26 @@ using namespace std;
 #define CCE(x) checkCudaErrors(x)
 #define STRIDE (sizeof(T) / sizeof(float))
 
+template <typename T>
+class SCALAR_MEMORY_BUFFER {
+public:
+  static T* getBuffer() {
+    static SCALAR_MEMORY_BUFFER buffer;
+    return buffer._ptr;
+  }
+private:
+  SCALAR_MEMORY_BUFFER(): _ptr(NULL) {
+    float scalar = 1;
+    CCE(cudaMalloc((void **) &_ptr, sizeof(T)));
+    CCE(cudaMemcpy(_ptr, &scalar, sizeof(T), cudaMemcpyHostToDevice));
+  };
+  SCALAR_MEMORY_BUFFER(const SCALAR_MEMORY_BUFFER& source);
+  ~SCALAR_MEMORY_BUFFER() { CCE(cudaFree(_ptr)); }
+  SCALAR_MEMORY_BUFFER& operator = (const SCALAR_MEMORY_BUFFER& rhs);
+
+  T* _ptr;
+};
+
 class CUBLAS_HANDLE {
 public:
   CUBLAS_HANDLE()  { CCE(cublasCreate(&_handle)); }
@@ -47,9 +67,14 @@ public:
   // Copy Constructor 
   device_matrix(const device_matrix<T>& source);
 
+  // Conversion operator
+  operator thrust::device_vector<T>() const;
+
 #ifdef HAS_HOST_MATRIX
   // Constructor from Host Matrix
   device_matrix(const host_matrix<T>& h_matrix);
+  
+  // Conversion operator
   operator host_matrix<T>() const;
 #endif
 
@@ -82,10 +107,12 @@ public:
   device_matrix<T>& operator *= (T alpha);
   device_matrix<T> operator * (T alpha) const;
   // ===== Matrix-Vector Multiplication =====
-  template <typename S>
-  friend thrust::device_vector<S> operator * (const thrust::device_vector<S>& rhs, const device_matrix<S>& m);
-  template <typename S>
-  friend thrust::device_vector<S> operator * (const device_matrix<S>& m, const thrust::device_vector<S>& rhs);
+  // template <typename S>
+  // friend thrust::device_vector<S> operator * (const thrust::device_vector<S>& lhs, const device_matrix<S>& m);
+  // template <typename S>
+  // friend thrust::device_vector<S> operator * (const device_matrix<S>& m, const thrust::device_vector<S>& rhs);
+  device_matrix<T> operator * (const thrust::device_vector<T>& rhs) const;
+
   // ===== Matrix-Matrix Multiplication =====
   device_matrix<T>& operator *= (const device_matrix<T>& rhs);
   device_matrix<T> operator * (const device_matrix<T>& rhs) const;
@@ -142,8 +169,10 @@ template <typename T>
 CUBLAS_HANDLE device_matrix<T>::_handle;
 
 typedef device_matrix<float> dfmat;
+typedef thrust::device_vector<float> dfvec;
 void sgemm(const dfmat& A, const dfmat& B, dfmat& C, float alpha = 1.0, float beta = 0.0);
 void sgeam(const dfmat& A, const dfmat& B, dfmat& C, float alpha = 1.0, float beta = 1.0);
+// void saxpy(const dfmat& A, dfmat& B, float alpha = 1.0f);
 float snrm2(const dfmat& A);
 
 template <typename T>

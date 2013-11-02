@@ -1,6 +1,10 @@
 #include <device_matrix.h>
 #define mylog(token) {cout << #token " = " << token << endl;}
 
+// ===============================
+// ===== class device_matrix =====
+// ===============================
+
 template <typename T>
 device_matrix<T>::device_matrix(): _rows(0), _cols(0), _data(NULL) { }
 
@@ -47,6 +51,13 @@ template <typename T>
 device_matrix<T>::device_matrix(const device_matrix<T>& source): _rows(source._rows), _cols(source._cols), _data(NULL) {
   _init();
   CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice));
+}
+
+// Conversion operator
+template <typename T>
+device_matrix<T>::operator thrust::device_vector<T>() const {
+  assert(_rows == 1 || _cols == 1);
+  return thrust::device_vector<T>(_data, _data + size());
 }
 
 #ifdef HAS_HOST_MATRIX
@@ -101,15 +112,14 @@ device_matrix<T>::~device_matrix() {
 // ===== Addition =====
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator += (T val) {
-  // TODO
+  CCE(cublasSaxpy(device_matrix<T>::_handle.get(), _rows*_cols, &val, SCALAR_MEMORY_BUFFER<T>::getBuffer(), 0, _data, 1));
   return *this;
 } 
 
 template <typename T>
 device_matrix<T> device_matrix<T>::operator + (T val) const {
-  printf("\33[33m[Warning]\33[0m operator + haven't implemented yet \n");
-  // TODO
-  return *this;
+  device_matrix<T> m(*this);
+  return (m += val);
 }
 
 template <typename T>
@@ -128,14 +138,15 @@ device_matrix<T> device_matrix<T>::operator + (const device_matrix<T>& rhs) cons
 // ===== Substraction =====
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator -= (T val) {
-  // TODO
+  val = -val;
+  CCE(cublasSaxpy(device_matrix<T>::_handle.get(), _rows*_cols, &val, SCALAR_MEMORY_BUFFER<T>::getBuffer(), 0, _data, 1));
   return *this;
 }
 
 template <typename T>
 device_matrix<T> device_matrix<T>::operator - (T val) const {
-  // TODO
-  return *this;
+  device_matrix<T> m(*this);
+  return (m -= val);
 }
 
 template <typename T>
@@ -175,6 +186,19 @@ template <typename T>
 device_matrix<T> device_matrix<T>::operator * (T alpha) const {
   device_matrix<T> result(*this);
   return result *= alpha;
+}
+// ===== Matrix-Vector Multiplication =====
+template <typename T>
+device_matrix<T> device_matrix<T>::operator * (const thrust::device_vector<T>& rhs) const {
+  assert(_cols == rhs.size());
+
+  device_matrix<T> m(_rows, 1);
+
+  float alpha = 1.0, beta = 0.0;
+  int lda = _rows;
+  CCE(cublasSgemv(dfmat::_handle.get(), CUBLAS_OP_N, _rows, _cols, &alpha, _data, lda, thrust::raw_pointer_cast(rhs.data()), STRIDE, &beta, m._data, STRIDE));
+
+  return m;
 }
 
 // ===== Matrix-Matrix Multiplication =====
