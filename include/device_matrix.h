@@ -111,12 +111,6 @@ public:
   // ===== Matrix-scalar Multiplication =====
   device_matrix<T>& operator *= (T alpha);
   device_matrix<T> operator * (T alpha) const;
-  // ===== Matrix-Vector Multiplication =====
-  // template <typename S>
-  // friend thrust::device_vector<S> operator * (const thrust::device_vector<S>& lhs, const device_matrix<S>& m);
-  // template <typename S>
-  // friend thrust::device_vector<S> operator * (const device_matrix<S>& m, const thrust::device_vector<S>& rhs);
-  // device_matrix<T> operator * (const thrust::device_vector<T>& rhs) const;
 
   // ===== Matrix-Matrix Multiplication =====
   device_matrix<T>& operator *= (const device_matrix<T>& rhs);
@@ -124,9 +118,6 @@ public:
 
   template <typename S>
   friend void swap(device_matrix<S>& lhs, device_matrix<S>& rhs);
-
-  template <typename S>
-  friend S L1_NORM(const device_matrix<S>& A, const device_matrix<S>& B);
 
   friend void sgemm(const device_matrix<float>& A, const device_matrix<float>& B, device_matrix<float>& C, float alpha, float beta);
 
@@ -162,10 +153,6 @@ void swap(device_matrix<T>& lhs, device_matrix<T>& rhs) {
   swap(lhs._data, rhs._data);
 }
 
-// In a class template, when performing implicit instantiation, the 
-// members are instantiated on demand. Since the code does not use the
-// static member, it's not even instantiated in the whole application.
-
 typedef device_matrix<float> dfmat;
 typedef thrust::device_vector<float> dfvec;
 void sgemm(const dfmat& A, const dfmat& B, dfmat& C, float alpha = 1.0, float beta = 0.0);
@@ -173,14 +160,19 @@ void sgeam(const dfmat& A, const dfmat& B, dfmat& C, float alpha = 1.0, float be
 // void saxpy(const dfmat& A, dfmat& B, float alpha = 1.0f);
 float snrm2(const dfmat& A);
 
-template <typename T>
-device_matrix<T> operator * (T alpha, const device_matrix<T>& m) {
-  return m * alpha;
+template <typename T, typename U>
+device_matrix<T> operator + (U alpha, const device_matrix<T>& m) {
+  return m + (T) alpha;
 }
 
-template <typename T>
-T L1_NORM(const device_matrix<T>& A, const device_matrix<T>& B) {
-  return matsum(A - B);
+template <typename T, typename U>
+device_matrix<T> operator - (U alpha, const device_matrix<T>& m) {
+  return m - (T) alpha;
+}
+
+template <typename T, typename U>
+device_matrix<T> operator * (U alpha, const device_matrix<T>& m) {
+  return m * (T) alpha;
 }
 
 #endif // __DEVICE_MATRIX_H__

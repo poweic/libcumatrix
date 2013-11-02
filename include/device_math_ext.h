@@ -12,11 +12,6 @@ namespace ext {
     return stl_vector;
   }
 
-  template <typename T>
-  thrust::device_vector<T> toDeviceVector(const vector<T>& v) {
-    return thrust::device_vector<T>(v.begin(), v.end());
-  }
-
   // ========================
   // ===== Save as File =====
   // ========================
@@ -33,18 +28,6 @@ namespace ext {
     vector<T> hv;
     ext::load<T>(hv, filename);
     return thrust::device_vector<T>(hv.begin(), hv.end());
-  }
-  // =================================
-  // ===== Summation over Vector =====
-  // =================================
-  template <typename T>
-  T sum(const thrust::device_vector<T>& v) {
-    return thrust::reduce(v.begin(), v.end());
-  }
-
-  template <typename T>
-  T sum(const device_matrix<T>& m) {
-    return thrust::reduce(m.getData(), m.getData() + m.size(), (T) 0, thrust::plus<T>());
   }
 
 #ifdef HAS_HOST_MATRIX

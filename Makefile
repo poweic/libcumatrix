@@ -8,7 +8,7 @@ CUDA_ROOT=/usr/local/cuda
 THRUST_INCLUDE=/share/Local
 
 EXECUTABLES=
-EXAMPLE_PROGRAM=benchmark test
+EXAMPLE_PROGRAM=benchmark example1 example2 test 
  
 .PHONY: debug all o3 ctags
 all: $(EXECUTABLES) $(EXAMPLE_PROGRAM) ctags
@@ -22,7 +22,7 @@ vpath %.h include/
 vpath %.cpp src/
 vpath %.cu src/
 
-OBJ=$(addprefix obj/,$(SOURCES:.cpp=.o))
+OBJ=obj/device_matrix.o
 
 LIBRARY=
 LIBRARY_PATH=-L/usr/local/boton/lib/
@@ -38,10 +38,13 @@ CUDA_INCLUDE=$(INCLUDE) \
 
 CPPFLAGS= -std=c++0x $(CFLAGS) $(INCLUDE)
 
-benchmark: $(OBJ) benchmark.cpp obj/device_matrix.o
+benchmark: $(OBJ) benchmark.cpp $(OBJ)
 	$(CXX) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
-
-test: $(OBJ) test.cu obj/device_matrix.o
+example1: $(OBJ) example1.cpp $(OBJ)
+	$(CXX) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
+example2: $(OBJ) example2.cu $(OBJ)
+	$(NVCC) $(NVCCFLAGS) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
+test: $(OBJ) test.cu $(OBJ)
 	$(NVCC) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
 # +==============================+
 # +===== Other Phony Target =====+
