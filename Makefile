@@ -5,7 +5,6 @@ CFLAGS=
 NVCC=nvcc -arch=sm_21 -w
 
 CUDA_ROOT=/usr/local/cuda
-THRUST_INCLUDE=/share/Local
 
 EXECUTABLES=
 EXAMPLE_PROGRAM=benchmark example1 example2
@@ -24,26 +23,22 @@ vpath %.cu src/
 
 OBJ=obj/device_matrix.o
 
-LIBRARY=
-LIBRARY_PATH=-L/usr/local/boton/lib/
-INCLUDE= -I include/\
-	 -I /usr/local/boton/include/
+INCLUDE= -I include/
 
-CUDA_LIBRARY= -lcuda -lcublas -lcudart $(LIBRARY)
-CUDA_LIBRARY_PATH=-L/usr/local/cuda/lib64/ $(LIBRARY_PATH)
+LIBRARY= -lcuda -lcublas -lcudart
+LIBRARY_PATH=-L$(CUDA_ROOT)/lib64/
 CUDA_INCLUDE=$(INCLUDE) \
 	     -isystem $(CUDA_ROOT)/samples/common/inc/ \
-	     -isystem $(CUDA_ROOT)/include \
-	     -I $(THRUST_INCLUDE)
+	     -isystem $(CUDA_ROOT)/include
 
 CPPFLAGS= -std=c++0x $(CFLAGS) $(INCLUDE)
 
 benchmark: $(OBJ) benchmark.cpp
-	$(CXX) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
+	$(CXX) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(LIBRARY_PATH) $(LIBRARY)
 example1: $(OBJ) example1.cpp
-	$(CXX) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
+	$(CXX) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(LIBRARY_PATH) $(LIBRARY)
 example2: $(OBJ) example2.cu
-	$(NVCC) $(NVCCFLAGS) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
+	$(NVCC) $(NVCCFLAGS) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(LIBRARY_PATH) $(LIBRARY)
 # +==============================+
 # +===== Other Phony Target =====+
 # +==============================+
@@ -62,6 +57,9 @@ obj/%.d: %.cpp
 
 .PHONY: ctags
 ctags:
-	@ctags -R *
+ifneq ($(shell which ctags),)
+		ctags -R *
+endif
+
 clean:
 	rm -rf $(EXECUTABLES) $(EXAMPLE_PROGRAM) obj/*
