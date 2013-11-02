@@ -8,7 +8,7 @@ CUDA_ROOT=/usr/local/cuda
 THRUST_INCLUDE=/share/Local
 
 EXECUTABLES=
-EXAMPLE_PROGRAM=benchmark example1 example2 test 
+EXAMPLE_PROGRAM=benchmark example1 example2
  
 .PHONY: debug all o3 ctags
 all: $(EXECUTABLES) $(EXAMPLE_PROGRAM) ctags
@@ -44,8 +44,6 @@ example1: $(OBJ) example1.cpp $(OBJ)
 	$(CXX) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
 example2: $(OBJ) example2.cu $(OBJ)
 	$(NVCC) $(NVCCFLAGS) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
-test: $(OBJ) test.cu $(OBJ)
-	$(NVCC) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
 # +==============================+
 # +===== Other Phony Target =====+
 # +==============================+
