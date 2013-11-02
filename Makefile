@@ -57,6 +57,9 @@ obj/%.d: %.cpp
 
 .PHONY: ctags
 ctags:
-	@ctags -R *
+ifneq ($(shell which ctags),)
+		ctags -R *
+endif
+
 clean:
 	rm -rf $(EXECUTABLES) $(EXAMPLE_PROGRAM) obj/*
