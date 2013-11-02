@@ -116,7 +116,7 @@ public:
   // friend thrust::device_vector<S> operator * (const thrust::device_vector<S>& lhs, const device_matrix<S>& m);
   // template <typename S>
   // friend thrust::device_vector<S> operator * (const device_matrix<S>& m, const thrust::device_vector<S>& rhs);
-  device_matrix<T> operator * (const thrust::device_vector<T>& rhs) const;
+  // device_matrix<T> operator * (const thrust::device_vector<T>& rhs) const;
 
   // ===== Matrix-Matrix Multiplication =====
   device_matrix<T>& operator *= (const device_matrix<T>& rhs);
