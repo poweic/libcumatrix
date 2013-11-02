@@ -36,43 +36,34 @@ dvec<T> operator & (const dvec<T>& x, const dvec<T>& y) {
   return z;
 }
 
-// template <typename T>
-// dvec<T> operator * (const dmat<T>& m, const dvec<T>& v) {
-//   assert(m._cols == v.size());
-//   dvec<T> result(m._rows);
-// 
-//   float alpha = 1.0, beta = 0.0;
-//   int lda = m._rows;
-// 
-//   cublasStatus_t status;
-//   status = cublasSgemv(dmat<T>::_handle.get(), CUBLAS_OP_N, m._rows, m._cols, &alpha, m._data, lda, thrust::raw_pointer_cast(v.data()), STRIDE, &beta, thrust::raw_pointer_cast(result.data()), STRIDE);
-//   CCE(status);
-// 
-//   return result;
-// }
-// 
-// template <typename T>
-// dvec<T> operator * (const dvec<T>& v, const dmat<T>& m) {
-//   assert(v.size() == m._rows); 
-//   dvec<T> result(m._cols);
-// 
-//   float alpha = 1.0, beta = 0.0;
-//   int lda = m._rows;
-// 
-//   cublasStatus_t status;
-//   status = cublasSgemv(dmat<T>::_handle.get(), CUBLAS_OP_T, m._rows, m._cols, &alpha, m._data, lda, thrust::raw_pointer_cast(v.data()), STRIDE, &beta, thrust::raw_pointer_cast(result.data()), STRIDE);
-//   CCE(status);
-// 
-//   return result;
-// }
+
+template <typename T>
+dmat<T> operator * (const dvec<T>& v, const dmat<T>& A) {
+  assert(v.size() == A.getRows());
+  device_matrix<T> m(1, A.getCols());
+
+  float alpha = 1.0, beta = 0.0;
+  CCE(cublasSgemv(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_T, A.getRows(), A.getCols(), &alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), STRIDE, &beta, m.getData(), STRIDE));
+
+  return m;
+}
+
+template <typename T>
+dmat<T> operator * (const dmat<T>& A, const dvec<T>& v) {
+  assert(A.getCols() == v.size());
+
+  device_matrix<T> m(A.getRows(), 1);
+
+  float alpha = 1.0, beta = 0.0;
+  CCE(cublasSgemv(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, A.getRows(), A.getCols(), &alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), STRIDE, &beta, m.getData(), STRIDE));
+
+  return m;
+}
 
 template <typename T>
 dmat<T> operator + (T val, const dmat<T>& m) {
   return m + val;
 }
-
-/*template <typename T>
-dmat<T> operator - (T val, dmat<T> m) {}*/
 
 template <typename T>
 T norm(const thrust::host_vector<T>& v) {
@@ -135,9 +126,9 @@ template void print<T> (const thrust::host_vector<T>& v); \
 template void print<T> (const thrust::device_vector<T>& v); \
 template dmat<T> operator & <T> (const dvec<T>& v, const dmat<T>& m); \
 template dmat<T> operator * <T> (const dvec<T>& col_vector, const dvec<T>& row_vector); \
-template dvec<T> operator & <T> (const dvec<T>& x, const dvec<T>& y);
-// template dvec<T> operator * <T> (const dmat<T>& m, const dvec<T>& v); \
-// template dvec<T> operator * <T> (const dvec<T>& v, const dmat<T>& m);
+template dvec<T> operator & <T> (const dvec<T>& x, const dvec<T>& y); \
+template dmat<T> operator * <T> (const dvec<T>& v, const dmat<T>& m); \
+template dmat<T> operator * <T> (const dmat<T>& m, const dvec<T>& v);
 
 EXPLICITLY_INSTANTIATE(float);
 

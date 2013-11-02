@@ -188,7 +188,7 @@ device_matrix<T> device_matrix<T>::operator * (T alpha) const {
   return result *= alpha;
 }
 // ===== Matrix-Vector Multiplication =====
-template <typename T>
+/*template <typename T>
 device_matrix<T> device_matrix<T>::operator * (const thrust::device_vector<T>& rhs) const {
   assert(_cols == rhs.size());
 
@@ -199,7 +199,7 @@ device_matrix<T> device_matrix<T>::operator * (const thrust::device_vector<T>& r
   CCE(cublasSgemv(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, _rows, _cols, &alpha, _data, lda, thrust::raw_pointer_cast(rhs.data()), STRIDE, &beta, m._data, STRIDE));
 
   return m;
-}
+}*/
 
 // ===== Matrix-Matrix Multiplication =====
 template <typename T>
