@@ -8,7 +8,7 @@ CUDA_ROOT=/usr/local/cuda
 THRUST_INCLUDE=/share/Local
 
 EXECUTABLES=
-EXAMPLE_PROGRAM=benchmark test
+EXAMPLE_PROGRAM=benchmark
  
 .PHONY: debug all o3 ctags
 all: $(EXECUTABLES) $(EXAMPLE_PROGRAM) ctags
@@ -40,9 +40,6 @@ CPPFLAGS= -std=c++0x $(CFLAGS) $(INCLUDE)
 
 benchmark: $(OBJ) benchmark.cpp obj/device_matrix.o
 	$(CXX) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
-
-test: $(OBJ) test.cu obj/device_matrix.o
-	$(NVCC) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(CUDA_LIBRARY_PATH) $(CUDA_LIBRARY)
 # +==============================+
 # +===== Other Phony Target =====+
 # +==============================+
