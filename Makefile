@@ -58,7 +58,7 @@ obj/%.d: %.cpp
 .PHONY: ctags
 ctags:
 ifneq ($(shell which ctags),)
-		ctags -R *
+	@ctags -R *
 endif
 
 clean:
