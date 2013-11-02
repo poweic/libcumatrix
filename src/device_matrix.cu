@@ -112,7 +112,7 @@ device_matrix<T>::~device_matrix() {
 // ===== Addition =====
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator += (T val) {
-  CCE(cublasSaxpy(device_matrix<T>::_handle.get(), _rows*_cols, &val, SCALAR_MEMORY_BUFFER<T>::getBuffer(), 0, _data, 1));
+  CCE(cublasSaxpy(CUBLAS_HANDLE::getInstance(), _rows*_cols, &val, SCALAR_MEMORY_BUFFER<T>::getBuffer(), 0, _data, 1));
   return *this;
 } 
 
@@ -139,7 +139,7 @@ device_matrix<T> device_matrix<T>::operator + (const device_matrix<T>& rhs) cons
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator -= (T val) {
   val = -val;
-  CCE(cublasSaxpy(device_matrix<T>::_handle.get(), _rows*_cols, &val, SCALAR_MEMORY_BUFFER<T>::getBuffer(), 0, _data, 1));
+  CCE(cublasSaxpy(CUBLAS_HANDLE::getInstance(), _rows*_cols, &val, SCALAR_MEMORY_BUFFER<T>::getBuffer(), 0, _data, 1));
   return *this;
 }
 
@@ -177,7 +177,7 @@ device_matrix<T> device_matrix<T>::operator / (T alpha) const {
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator *= (T alpha) {
   cublasStatus_t status;
-  status = cublasSscal(device_matrix<float>::_handle.get(), _rows*_cols, &alpha, _data, STRIDE);
+  status = cublasSscal(CUBLAS_HANDLE::getInstance(), _rows*_cols, &alpha, _data, STRIDE);
   CCE(status);
   return *this;
 }
@@ -196,7 +196,7 @@ device_matrix<T> device_matrix<T>::operator * (const thrust::device_vector<T>& r
 
   float alpha = 1.0, beta = 0.0;
   int lda = _rows;
-  CCE(cublasSgemv(dfmat::_handle.get(), CUBLAS_OP_N, _rows, _cols, &alpha, _data, lda, thrust::raw_pointer_cast(rhs.data()), STRIDE, &beta, m._data, STRIDE));
+  CCE(cublasSgemv(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, _rows, _cols, &alpha, _data, lda, thrust::raw_pointer_cast(rhs.data()), STRIDE, &beta, m._data, STRIDE));
 
   return m;
 }
@@ -255,6 +255,11 @@ void device_matrix<T>::print(FILE* fid) const {
 }
 
 template <typename T>
+void device_matrix<T>::fillwith(T val) {
+  cudaMemset(_data, 0, _rows * _cols * sizeof(T));
+}
+
+template <typename T>
 void device_matrix<T>::save(const string& filename) const {
   FILE* fid = fopen(filename.c_str(), "w");
   if (fid == NULL)
@@ -271,7 +276,7 @@ template class device_matrix<float>;
 float snrm2(const dfmat& A) {
   float result;
   cublasStatus_t status;
-  status = cublasSnrm2(dfmat::_handle.get(), A.size(), A.getData(), 1, &result);
+  status = cublasSnrm2(CUBLAS_HANDLE::getInstance(), A.size(), A.getData(), 1, &result);
   CCE(status);
   return result;
 }
@@ -289,7 +294,7 @@ void sgemm(const dfmat& A, const dfmat& B, dfmat& C, float alpha, float beta) {
   int ldc = C._rows;
 
   cublasStatus_t status;
-  status = cublasSgemm(dfmat::_handle.get(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha, A._data, lda, B._data, ldb, &beta, C._data, ldc);
+  status = cublasSgemm(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha, A._data, lda, B._data, ldb, &beta, C._data, ldc);
 
   CCE(status);
 }
@@ -307,6 +312,6 @@ void sgeam(const dfmat& A, const dfmat& B, dfmat& C, float alpha, float beta) {
   int ldc = C._rows;
 
   cublasStatus_t status;
-  status = cublasSgeam(dfmat::_handle.get(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, &alpha, A._data, lda, &beta, B._data, ldb, C._data, ldc);
+  status = cublasSgeam(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, &alpha, A._data, lda, &beta, B._data, ldb, C._data, ldc);
   CCE(status);
 }

@@ -21,7 +21,7 @@ dmat<T> operator * (const dvec<T>& col_vector, const dvec<T>& row_vector) {
   int ldc = m;
 
   cublasStatus_t status;
-  status = cublasSgemm(dmat<T>::_handle.get(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha, cv, lda, rv, ldb, &beta, result.getData(), ldc);
+  status = cublasSgemm(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha, cv, lda, rv, ldb, &beta, result.getData(), ldc);
 
   CCE(status);
 

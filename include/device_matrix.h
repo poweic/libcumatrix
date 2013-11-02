@@ -45,11 +45,16 @@ private:
 
 class CUBLAS_HANDLE {
 public:
-  CUBLAS_HANDLE()  { CCE(cublasCreate(&_handle)); }
-  ~CUBLAS_HANDLE() { CCE(cublasDestroy(_handle)); }
-
-  cublasHandle_t& get() { return _handle; }
+  static cublasHandle_t& getInstance() {
+    static CUBLAS_HANDLE H;
+    return H._handle;
+  }
 private:
+  CUBLAS_HANDLE()  { CCE(cublasCreate(&_handle)); }
+  CUBLAS_HANDLE(const CUBLAS_HANDLE& source);
+  ~CUBLAS_HANDLE() { CCE(cublasDestroy(_handle)); }
+  CUBLAS_HANDLE& operator = (const CUBLAS_HANDLE& rhs);
+
   cublasHandle_t _handle;
 };
 
@@ -135,17 +140,12 @@ public:
   void resize(size_t r, size_t c);
   void print(FILE* fid = stdout) const;
 
-  void fillwith(T val) {
-    cudaMemset(_data, 0, _rows * _cols * sizeof(T));
-  }
-
+  void fillwith(T val);
   size_t size() const { return _rows * _cols; }
   size_t getRows() const { return _rows; }
   size_t getCols() const { return _cols; }
   T* getData() const { return _data; }
   void save(const string& filename) const;
-
-  static CUBLAS_HANDLE _handle;
 
 private:
 
@@ -165,8 +165,6 @@ void swap(device_matrix<T>& lhs, device_matrix<T>& rhs) {
 // In a class template, when performing implicit instantiation, the 
 // members are instantiated on demand. Since the code does not use the
 // static member, it's not even instantiated in the whole application.
-template <typename T>
-CUBLAS_HANDLE device_matrix<T>::_handle;
 
 typedef device_matrix<float> dfmat;
 typedef thrust::device_vector<float> dfvec;
