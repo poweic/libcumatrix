@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Libcumatrix by botonchou</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/respond.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="stylesheets/ie.css">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+      <div id="header">
+        <nav>
+          <li class="fork"><a href="https://github.com/botonchou/libcumatrix">View On GitHub</a></li>
+          <li class="downloads"><a href="https://github.com/botonchou/libcumatrix/zipball/master">ZIP</a></li>
+          <li class="downloads"><a href="https://github.com/botonchou/libcumatrix/tarball/master">TAR</a></li>
+          <li class="title">DOWNLOADS</li>
+        </nav>
+      </div><!-- end header -->
+
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>Libcumatrix</h1>
+          <p>C++ Wrapper for Nvidia CUDA Matrix </p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="https://github.com/botonchou">botonchou</a></span>
+          <span class="credits right">Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></span>
+        </div>
+
+        <h2>
+<a name="how-to-use" class="anchor" href="#how-to-use"><span class="octicon octicon-link"></span></a>How to Use</h2>
+
+<p>Just type "make" and run the following programs:</p>
+
+<ol>
+<li><p>./benchmark</p></li>
+<li><p>./example1</p></li>
+<li><p>./example2</p></li>
+</ol><h2>
+<a name="dependencies" class="anchor" href="#dependencies"><span class="octicon octicon-link"></span></a>Dependencies</h2>
+
+<p>First of all, you need a NVidia Graphic Card.</p>
+
+<p>The only thing libcumatrix needed is CUDA. On linking, libcumatrix searches for:</p>
+
+<ol>
+<li><p>-lcuda   (libcuda.so  )</p></li>
+<li><p>-lcublas (libcublas.so)</p></li>
+<li><p>-lcudart (libcudart.so)</p></li>
+</ol><p>By default, the root directories containing CUDA is "/usr/local/cuda". If you
+wish to change it, open the "Makefile" and change CUDA_ROOT to where it lies.</p>
+
+<p>For an older version of CUDA sdk, Thrust Library did not lie directly in "/include/thrust" (something like /include/thrust-1.5.1). Create a symbolic link for it using the following command:</p>
+
+<p><code>ln -s /usr/local/cuda/include/thrust-1.5.1 /usr/local/cuda/include/thrust</code></p>
+      </section>
+
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+    
+  </body>
+</html>
