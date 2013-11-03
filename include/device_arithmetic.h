@@ -2,25 +2,8 @@
 #define __DEVICE_BLAS_H_
 
 #include <device_matrix.h>
-#ifndef __CUDACC__
-#pragma message "\33[33mPotentially wrong compiler. Please use nvcc instead \33[0m"
-#endif
 
-#include <thrust/transform_reduce.h>
-#include <thrust/functional.h>
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
-#define HAVE_THRUST_DEVICE_VECTOR_H 1
-
-// =====================================
-// ===== Vector - Scalar Operators =====
-// =====================================
-#define VECTOR thrust::device_vector
-#define WHERE thrust
-#include <functional.inl>
-#include <arithmetic.inl>
-#undef VECTOR
-#undef WHERE
+#include <device_vector_operators.h>
 
 #define dvec thrust::device_vector
 #define dmat device_matrix

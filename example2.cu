@@ -9,7 +9,7 @@
  * But you need "nvcc" compiler to compile these two headers
  */
 #include <device_arithmetic.h>
-#include <device_math_ext.h>
+#include <device_math.h>
 using namespace ext;
 
 using namespace std;
