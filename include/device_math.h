@@ -7,6 +7,7 @@
 #include <thrust/device_vector.h>
 #define HAVE_THRUST_DEVICE_VECTOR_H 1
 
+#include <functional.inl>
 #include <device_matrix.h>
 
 namespace ext {
