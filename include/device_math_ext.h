@@ -1,7 +1,12 @@
 #ifndef __DEVICE_MATH_EXT_H_
 #define __DEVICE_MATH_EXT_H_
 
-#include <math_ext.h>
+#include <thrust/transform_reduce.h>
+#include <thrust/functional.h>
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
+#define HAVE_THRUST_DEVICE_VECTOR_H 1
+
 #include <device_matrix.h>
 
 namespace ext {
@@ -30,59 +35,50 @@ namespace ext {
     return thrust::device_vector<T>(hv.begin(), hv.end());
   }
 
-#ifdef HAS_HOST_MATRIX
-  // ================
-  // ===== Rand =====
-  // ================
+  // =================
+  // ===== Print =====
+  // =================
   template <typename T>
-  void rand(device_matrix<T>& m) {
-    Matrix2D<T> h_m(m.getRows(), m.getCols());
-    rand(h_m);
-    m = device_matrix<T>(h_m);
+  void print(const thrust::host_vector<T>& v) {
+    std::vector<T> stl_v(v.begin(), v.end());
+    printf("[");
+    for (size_t i=0; i<v.size(); ++i)
+      printf("%.4f ", v[i]);
+    printf("]\n\n");
   }
 
   template <typename T>
-  void randn(device_matrix<T>& m) {
-    Matrix2D<T> h_m(m.getRows(), m.getCols());
-    ext::randn(h_m);
-    m = device_matrix<T>(h_m);
+  void print(const thrust::device_vector<T>& v) {
+    thrust::host_vector<T> hv(v);
+    print(hv);
   }
-#endif
-  // ===================
-  // ===== SoftMax =====
-  // ===================
+
+  // =====================
+  // ===== L2 - norm =====
+  // =====================
   template <typename T>
-  thrust::device_vector<T> softmax(const thrust::device_vector<T>& x) {
-    thrust::device_vector<T> s(x.size());
-
-    thrust::transform(x.begin(), x.end(), s.begin(), func::exp<T>());
-
-    T denominator = 1.0 / ext::sum(s);
-    thrust::transform(s.begin(), s.end(), s.begin(), func::ax<T>(denominator));
-
-    return s;
+  T norm(const thrust::host_vector<T>& v) {
+    return std::sqrt( thrust::transform_reduce(v.begin(), v.end(), func::square<T>(), (T) 0, thrust::plus<T>()) );
   }
 
-  // ============================
-  // ===== Sigmoid Function =====
-  // ============================
   template <typename T>
-  thrust::device_vector<T> sigmoid(const thrust::device_vector<T>& x) {
-    thrust::device_vector<T> s(x.size());
-    thrust::transform(x.begin(), x.end(), s.begin(), func::sigmoid<T>());
-    return s;
+  T norm(const thrust::device_vector<T>& v) {
+    return std::sqrt( thrust::transform_reduce(v.begin(), v.end(), func::square<T>(), (T) 0, thrust::plus<T>()) );
   }
 
-  // ================================
-  // ===== Biased after Sigmoid =====
-  // ================================
+  // ===============
+  // ===== Sum =====
+  // ===============
   template <typename T>
-  thrust::device_vector<T> b_sigmoid(const thrust::device_vector<T>& x) {
-    thrust::device_vector<T> s(x.size() + 1);
-    thrust::transform(x.begin(), x.end(), s.begin(), func::sigmoid<T>());
-    s.back() = 1.0;
-    return s;
+  T sum(const thrust::device_vector<T>& v) {
+    return thrust::reduce(v.begin(), v.end());
   }
+
+  template <typename T>
+  T sum(const device_matrix<T>& m) {
+    return thrust::reduce(m.getData(), m.getData() + m.size(), (T) 0, thrust::plus<T>());
+  }
+
 };
 
 #endif // __DEVICE_MATH_EXT_H_

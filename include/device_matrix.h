@@ -5,16 +5,6 @@
 #include <string>
 using namespace std;
 
-#ifdef HAS_HOST_MATRIX
-#include <matrix.h>
-#define host_matrix Matrix2D
-#endif
-
-#include <thrust/transform_reduce.h>
-#include <thrust/functional.h>
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
-
 /* Includes, cuda */
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
@@ -72,15 +62,9 @@ public:
   // Copy Constructor 
   device_matrix(const device_matrix<T>& source);
 
+#ifdef HAVE_THRUST_DEVICE_VECTOR_H
   // Conversion operator
   operator thrust::device_vector<T>() const;
-
-#ifdef HAS_HOST_MATRIX
-  // Constructor from Host Matrix
-  device_matrix(const host_matrix<T>& h_matrix);
-  
-  // Conversion operator
-  operator host_matrix<T>() const;
 #endif
 
   // Destructor
@@ -154,7 +138,6 @@ void swap(device_matrix<T>& lhs, device_matrix<T>& rhs) {
 }
 
 typedef device_matrix<float> dfmat;
-typedef thrust::device_vector<float> dfvec;
 void sgemm(const dfmat& A, const dfmat& B, dfmat& C, float alpha = 1.0, float beta = 0.0);
 void sgeam(const dfmat& A, const dfmat& B, dfmat& C, float alpha = 1.0, float beta = 1.0);
 // void saxpy(const dfmat& A, dfmat& B, float alpha = 1.0f);

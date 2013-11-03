@@ -53,50 +53,12 @@ device_matrix<T>::device_matrix(const device_matrix<T>& source): _rows(source._r
   CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice));
 }
 
+#ifdef HAVE_THRUST_DEVICE_VECTOR_H
 // Conversion operator
 template <typename T>
 device_matrix<T>::operator thrust::device_vector<T>() const {
   assert(_rows == 1 || _cols == 1);
   return thrust::device_vector<T>(_data, _data + size());
-}
-
-#ifdef HAS_HOST_MATRIX
-// Constructor from Host Matrix
-template <typename T>
-device_matrix<T>::device_matrix(const host_matrix<T>& h_matrix): _rows(h_matrix.getRows()), _cols(h_matrix.getCols()), _data(NULL) {
-
-  // Convert T** to column major using transpose
-  host_matrix<T> cm_h_matrix(~h_matrix);
-  _init();
-
-  size_t n = _rows * _cols;
-
-  T* h_data = new T[n];
-  for (size_t i=0; i<_cols; ++i)
-    memcpy(h_data + i*_rows, cm_h_matrix[i], sizeof(T) * _rows);
-
-  CCE(cudaMemcpy(_data, h_data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice));
-  // CCE(cublasSetVector(n, sizeof(T), h_data, STRIDE, _data, STRIDE));
-
-  delete [] h_data;
-}
-
-template <typename T>
-device_matrix<T>::operator host_matrix<T>() const {
-
-  host_matrix<T> cm_h_matrix(_cols, _rows);
-
-  size_t n = _rows * _cols;
-  T* h_data = new T[n];
-
-  CCE(cublasGetVector(n, sizeof(T), _data, STRIDE, h_data, STRIDE));
-
-  for (size_t i=0; i<_cols; ++i)
-    memcpy(cm_h_matrix[i], h_data + i*_rows, sizeof(T) * _rows);
-
-  delete [] h_data;
-
-  return ~cm_h_matrix;
 }
 #endif
 
