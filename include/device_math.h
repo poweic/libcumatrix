@@ -21,6 +21,18 @@ namespace ext {
   // ===== Save as File =====
   // ========================
   template <typename T>
+  void save(const vector<T>& v, string filename) {
+    ofstream fs(filename.c_str());
+
+    fs.precision(6);
+    fs << std::scientific;
+    for (size_t i=0; i<v.size(); ++i)
+      fs << v[i] << endl;
+
+    fs.close();
+  }
+
+  template <typename T>
   void save(const thrust::device_vector<T>& v, string filename) {
     ext::save(toStlVector(v), filename);
   }
@@ -28,6 +40,19 @@ namespace ext {
   // ==========================
   // ===== Load from File =====
   // ==========================
+  template <typename T>
+  void load(vector<T>& v, string filename) {
+    v.clear();
+
+    ifstream fs(filename.c_str());
+
+    T t;
+    while (fs >> t) 
+      v.push_back(t);
+
+    fs.close();
+  }
+
   template <typename T>
   thrust::device_vector<T> load(string filename) {
     vector<T> hv;
