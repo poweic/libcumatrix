@@ -22,7 +22,7 @@ public:
   }
 private:
   SCALAR_MEMORY_BUFFER(): _ptr(NULL) {
-    float scalar = 1;
+    T scalar = 1;
     CCE(cudaMalloc((void **) &_ptr, sizeof(T)));
     CCE(cudaMemcpy(_ptr, &scalar, sizeof(T), cudaMemcpyHostToDevice));
   };
@@ -136,6 +136,13 @@ public:
 
   static void cublas_nrm2(int n, const T *x, int incx, T *result);
 
+  static void cublas_scal(int n, T alpha, T *x, int incx);
+
+  static void cublas_axpy(
+      int n, T alpha,
+      const T *x, int incx,
+      T *y, int incy);
+
 private:
 
   size_t _rows;
@@ -151,11 +158,46 @@ void swap(device_matrix<T>& lhs, device_matrix<T>& rhs) {
   swap(lhs._data, rhs._data);
 }
 
-#define _DSMAT_ device_matrix<float>
-void sgemm(const _DSMAT_& A, const _DSMAT_& B, _DSMAT_& C, float alpha = 1.0, float beta = 0.0);
-void sgeam(const _DSMAT_& A, const _DSMAT_& B, _DSMAT_& C, float alpha = 1.0, float beta = 1.0);
-float snrm2(const _DSMAT_& A);
-#undef _DSMAT_
+#define dmat device_matrix<T>
+template <typename T>
+T nrm2(const dmat& A) {
+  T result;
+  device_matrix<T>::cublas_nrm2(A.size(), A.getData(), STRIDE, &result);
+  return result;
+}
+
+template <typename T>
+void gemm(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 0.0) {
+  // Perform C = αA*B + βC, not transpose on A and B
+  size_t m = A.getRows();
+  size_t n = B.getCols();
+  C.resize(m, n);
+
+  size_t k = A.getCols();
+
+  int lda = A.getRows();
+  int ldb = B.getRows();
+  int ldc = C.getRows();
+
+  device_matrix<T>::cublas_gemm(CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, alpha, A.getData(), lda, B.getData(), ldb, beta, C.getData(), ldc);
+}
+
+template <typename T>
+void geam(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 1.0) {
+  // Perform C = αA + βB, not transpose on A and B
+  assert(A.getRows() == B.getRows() && A.getCols() == B.getCols());
+  
+  size_t m = A.getRows();
+  size_t n = A.getCols();
+  C.resize(m, n);
+
+  int lda = A.getRows();
+  int ldb = B.getRows();
+  int ldc = C.getRows();
+
+  device_matrix<T>::cublas_geam(CUBLAS_OP_N, CUBLAS_OP_N, m, n, alpha, A.getData(), lda, beta, B.getData(), ldb, C.getData(), ldc);
+}
+#undef dmat
 
 
 template <typename T, typename U>

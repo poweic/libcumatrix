@@ -4,7 +4,14 @@
 using namespace std;
 typedef device_matrix<float> mat;
 
-void randomInit(mat& m);
+template <typename T>
+void randomInit(device_matrix<T>& m) {
+  T* h_data = new T [m.size()];
+  for (int i=0; i<m.size(); ++i)
+    h_data[i] = rand() / (T) RAND_MAX;
+  cudaMemcpy(m.getData(), h_data, m.size() * sizeof(T), cudaMemcpyHostToDevice);
+  delete [] h_data;
+}
 
 int main (int argc, char* argv[]) {
   mat A(16, 16), B(16, 16);
@@ -61,10 +68,3 @@ int main (int argc, char* argv[]) {
   return 0;
 }
 
-void randomInit(mat& m) {
-  float* h_data = new float [m.size()];
-  for (int i=0; i<m.size(); ++i)
-    h_data[i] = rand() / (float) RAND_MAX;
-  cudaMemcpy(m.getData(), h_data, m.size() * sizeof(float), cudaMemcpyHostToDevice);
-  delete [] h_data;
-}
