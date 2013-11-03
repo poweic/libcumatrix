@@ -2,64 +2,11 @@
 #define __DEVICE_BLAS_H_
 
 #include <device_matrix.h>
-#ifndef __CUDACC__
-#pragma message "\33[33mPotentially wrong compiler. Please use nvcc instead \33[0m"
-#endif
 
-// =====================================
-// ===== Vector - Scalar Operators =====
-// =====================================
-#define VECTOR thrust::device_vector
-#define WHERE thrust
-#include <functional.inl>
-#include <arithmetic.inl>
-#undef VECTOR
-#undef WHERE
+#include <device_vector_operators.h>
 
 #define dvec thrust::device_vector
 #define dmat device_matrix
-
-// ====================================
-// ===== Vector Utility Functions =====
-// ====================================
-
-// L2 - norm
-template <typename T>
-T norm(const thrust::host_vector<T>& v) {
-  return std::sqrt( thrust::transform_reduce(v.begin(), v.end(), func::square<T>(), (T) 0, thrust::plus<T>()) );
-}
-
-template <typename T>
-T norm(const thrust::device_vector<T>& v) {
-  return std::sqrt( thrust::transform_reduce(v.begin(), v.end(), func::square<T>(), (T) 0, thrust::plus<T>()) );
-}
-
-// Sum
-template <typename T>
-T sum(const thrust::device_vector<T>& v) {
-  return thrust::reduce(v.begin(), v.end());
-}
-
-template <typename T>
-T sum(const device_matrix<T>& m) {
-  return thrust::reduce(m.getData(), m.getData() + m.size(), (T) 0, thrust::plus<T>());
-}
-
-// Print
-template <typename T>
-void print(const thrust::host_vector<T>& v) {
-  std::vector<T> stl_v(v.begin(), v.end());
-  printf("[");
-  for (size_t i=0; i<v.size(); ++i)
-    printf("%.4f ", v[i]);
-  printf("]\n\n");
-}
-
-template <typename T>
-void print(const thrust::device_vector<T>& v) {
-  thrust::host_vector<T> hv(v);
-  print(hv);
-}
 
 // =====================================
 // ===== Matrix - Vector Operators =====

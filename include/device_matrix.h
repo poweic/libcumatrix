@@ -5,16 +5,6 @@
 #include <string>
 using namespace std;
 
-#ifdef HAS_HOST_MATRIX
-#include <matrix.h>
-#define host_matrix Matrix2D
-#endif
-
-#include <thrust/transform_reduce.h>
-#include <thrust/functional.h>
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
-
 /* Includes, cuda */
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
@@ -72,15 +62,9 @@ public:
   // Copy Constructor 
   device_matrix(const device_matrix<T>& source);
 
+#ifdef HAVE_THRUST_DEVICE_VECTOR_H
   // Conversion operator
   operator thrust::device_vector<T>() const;
-
-#ifdef HAS_HOST_MATRIX
-  // Constructor from Host Matrix
-  device_matrix(const host_matrix<T>& h_matrix);
-  
-  // Conversion operator
-  operator host_matrix<T>() const;
 #endif
 
   // Destructor
@@ -119,10 +103,6 @@ public:
   template <typename S>
   friend void swap(device_matrix<S>& lhs, device_matrix<S>& rhs);
 
-  friend void sgemm(const device_matrix<float>& A, const device_matrix<float>& B, device_matrix<float>& C, float alpha, float beta);
-
-  friend void sgeam(const device_matrix<float>& A, const device_matrix<float>& B, device_matrix<float>& C, float alpha, float beta);
-
   // Operator Assignment:
   // call copy constructor first, and swap with the temp variable
   device_matrix<T>& operator = (device_matrix<T> rhs);
@@ -137,6 +117,24 @@ public:
   size_t getCols() const { return _cols; }
   T* getData() const { return _data; }
   void save(const string& filename) const;
+
+  static void cublas_gemm(
+    cublasOperation_t transA, cublasOperation_t transB,
+    int m, int n, int k,
+    T alpha,
+    const T* A, int lda,
+    const T* B, int ldb,
+    T beta,
+    T* C, int ldc);
+
+  static void cublas_geam(
+      cublasOperation_t transA, cublasOperation_t transB,
+      int m, int n,
+      T alpha, const T *A, int lda,
+      T beta , const T *B, int ldb,
+      T *C, int ldc);
+
+  static void cublas_nrm2(int n, const T *x, int incx, T *result);
 
 private:
 
@@ -153,12 +151,12 @@ void swap(device_matrix<T>& lhs, device_matrix<T>& rhs) {
   swap(lhs._data, rhs._data);
 }
 
-typedef device_matrix<float> dfmat;
-typedef thrust::device_vector<float> dfvec;
-void sgemm(const dfmat& A, const dfmat& B, dfmat& C, float alpha = 1.0, float beta = 0.0);
-void sgeam(const dfmat& A, const dfmat& B, dfmat& C, float alpha = 1.0, float beta = 1.0);
-// void saxpy(const dfmat& A, dfmat& B, float alpha = 1.0f);
-float snrm2(const dfmat& A);
+#define _DSMAT_ device_matrix<float>
+void sgemm(const _DSMAT_& A, const _DSMAT_& B, _DSMAT_& C, float alpha = 1.0, float beta = 0.0);
+void sgeam(const _DSMAT_& A, const _DSMAT_& B, _DSMAT_& C, float alpha = 1.0, float beta = 1.0);
+float snrm2(const _DSMAT_& A);
+#undef _DSMAT_
+
 
 template <typename T, typename U>
 device_matrix<T> operator + (U alpha, const device_matrix<T>& m) {

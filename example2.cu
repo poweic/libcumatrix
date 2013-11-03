@@ -8,8 +8,9 @@
  * (2) Matrix - Vector multiplication
  * But you need "nvcc" compiler to compile these two headers
  */
-#include <device_math_ext.h>
 #include <device_arithmetic.h>
+#include <device_math.h>
+using namespace ext;
 
 using namespace std;
 typedef device_matrix<float> mat;
@@ -19,12 +20,8 @@ void randomInit(vec& v);
 void randomInit(mat& m);
 
 template <typename T>
-struct square
-{
-  __host__ __device__
-    T operator()(const T& x) const { 
-      return x * x;
-    }
+struct square {
+  __host__ __device__ T operator()(const T& x) const { return x * x; }
 };
 
 int main (int argc, char* argv[]) {
