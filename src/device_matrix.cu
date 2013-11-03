@@ -220,12 +220,68 @@ void device_matrix<T>::save(const string& filename) const {
   print(fid);
   fclose(fid);
 }
+
+template <>
+void device_matrix<float>::cublas_gemm(
+  cublasOperation_t transA, cublasOperation_t transB,
+  int m, int n, int k,
+  float alpha,
+  const float* A, int lda,
+  const float* B, int ldb,
+  float beta,
+  float* C, int ldc) {
+  CCE(cublasSgemm(CUBLAS_HANDLE::getInstance(), transA, transB, m, n, k, &alpha, A, lda, B, ldb, &beta, C, ldc));
+}
+
+template <>
+void device_matrix<double>::cublas_gemm(
+  cublasOperation_t transA, cublasOperation_t transB,
+  int m, int n, int k,
+  double alpha,
+  const double* A, int lda,
+  const double* B, int ldb,
+  double beta,
+  double* C, int ldc) {
+  CCE(cublasDgemm(CUBLAS_HANDLE::getInstance(), transA, transB, m, n, k, &alpha, A, lda, B, ldb, &beta, C, ldc));
+}
+
+template <>
+void device_matrix<float>::cublas_geam(
+    cublasOperation_t transA, cublasOperation_t transB,
+    int m, int n,
+    float alpha, const float *A, int lda,
+    float beta , const float *B, int ldb,
+    float *C, int ldc) {
+  CCE(cublasSgeam(CUBLAS_HANDLE::getInstance(), transA, transB, m, n, &alpha, A, lda, &beta, B, ldb, C, ldc));
+}
+
+template <>
+void device_matrix<double>::cublas_geam(
+    cublasOperation_t transA, cublasOperation_t transB,
+    int m, int n,
+    double alpha, const double *A, int lda,
+    double beta , const double *B, int ldb,
+    double *C, int ldc) {
+  CCE(cublasDgeam(CUBLAS_HANDLE::getInstance(), transA, transB, m, n, &alpha, A, lda, &beta, B, ldb, C, ldc));
+}
+
+template <>
+void device_matrix<float>::cublas_nrm2(int n, const float *x, int incx, float *result) {
+  CCE(cublasSnrm2(CUBLAS_HANDLE::getInstance(), n, x, 1, result));
+}
+
+template <>
+void device_matrix<double>::cublas_nrm2(int n, const double *x, int incx, double *result) {
+  CCE(cublasDnrm2(CUBLAS_HANDLE::getInstance(), n, x, 2, result));
+}
+
 // ++++++++++++++++++++++++++++++++++++++++++++
 // +++++ Template Explicit Initialization +++++
 // ++++++++++++++++++++++++++++++++++++++++++++
 template class device_matrix<float>;
 
-float snrm2(const dfmat& A) {
+#define _DSMAT_ device_matrix<float>
+float snrm2(const _DSMAT_& A) {
   float result;
   cublasStatus_t status;
   status = cublasSnrm2(CUBLAS_HANDLE::getInstance(), A.size(), A.getData(), 1, &result);
@@ -233,37 +289,39 @@ float snrm2(const dfmat& A) {
   return result;
 }
 
-void sgemm(const dfmat& A, const dfmat& B, dfmat& C, float alpha, float beta) {
+void sgemm(const _DSMAT_& A, const _DSMAT_& B, _DSMAT_& C, float alpha, float beta) {
   // Perform C = αA*B + βC, not transpose on A and B
-  size_t m = A._rows;
-  size_t n = B._cols;
+  size_t m = A.getRows();
+  size_t n = B.getCols();
   C.resize(m, n);
 
-  size_t k = A._cols;
+  size_t k = A.getCols();
 
-  int lda = A._rows;
-  int ldb = B._rows;
-  int ldc = C._rows;
+  int lda = A.getRows();
+  int ldb = B.getRows();
+  int ldc = C.getRows();
 
   cublasStatus_t status;
-  status = cublasSgemm(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha, A._data, lda, B._data, ldb, &beta, C._data, ldc);
+  status = cublasSgemm(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha, A.getData(), lda, B.getData(), ldb, &beta, C.getData(), ldc);
 
   CCE(status);
 }
 
-void sgeam(const dfmat& A, const dfmat& B, dfmat& C, float alpha, float beta) {
+void sgeam(const _DSMAT_& A, const _DSMAT_& B, _DSMAT_& C, float alpha, float beta) {
   // Perform C = αA + βB, not transpose on A and B
-  assert(A._rows == B._rows && A._cols == B._cols);
+  assert(A.getRows() == B.getRows() && A.getCols() == B.getCols());
   
-  size_t m = A._rows;
-  size_t n = A._cols;
+  size_t m = A.getRows();
+  size_t n = A.getCols();
   C.resize(m, n);
 
-  int lda = A._rows;
-  int ldb = B._rows;
-  int ldc = C._rows;
+  int lda = A.getRows();
+  int ldb = B.getRows();
+  int ldc = C.getRows();
 
   cublasStatus_t status;
-  status = cublasSgeam(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, &alpha, A._data, lda, &beta, B._data, ldb, C._data, ldc);
+  status = cublasSgeam(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, &alpha, A.getData(), lda, &beta, B.getData(), ldb, C.getData(), ldc);
   CCE(status);
 }
+#undef _DSMAT_
+
