@@ -29,10 +29,7 @@ dmat<T> operator * (const dvec<T>& col_vector, const dvec<T>& row_vector) {
   int ldb = 1;
   int ldc = m;
 
-  cublasStatus_t status;
-  status = cublasSgemm(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha, cv, lda, rv, ldb, &beta, result.getData(), ldc);
-
-  CCE(status);
+  device_matrix<T>::cublas_gemm(CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, alpha, cv, lda, rv, ldb, beta, result.getData(), ldc);
 
   return result;
 }
@@ -51,7 +48,7 @@ dmat<T> operator * (const dvec<T>& v, const dmat<T>& A) {
   device_matrix<T> m(1, A.getCols());
 
   float alpha = 1.0, beta = 0.0;
-  CCE(cublasSgemv(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_T, A.getRows(), A.getCols(), &alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), STRIDE, &beta, m.getData(), STRIDE));
+  device_matrix<T>::cublas_gemv(CUBLAS_OP_T, A.getRows(), A.getCols(), alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), STRIDE, beta, m.getData(), STRIDE);
 
   return m;
 }
@@ -63,7 +60,7 @@ dmat<T> operator * (const dmat<T>& A, const dvec<T>& v) {
   device_matrix<T> m(A.getRows(), 1);
 
   float alpha = 1.0, beta = 0.0;
-  CCE(cublasSgemv(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, A.getRows(), A.getCols(), &alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), STRIDE, &beta, m.getData(), STRIDE));
+  device_matrix<T>::cublas_gemv(CUBLAS_OP_N, A.getRows(), A.getCols(), alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), STRIDE, beta, m.getData(), STRIDE);
 
   return m;
 }

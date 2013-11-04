@@ -264,6 +264,30 @@ void device_matrix<double>::cublas_geam(
 }
 
 template <>
+void device_matrix<float>::cublas_gemv(
+    cublasOperation_t trans,
+    int m, int n,
+    float alpha,
+    const float *A, int lda,
+    const float *x, int incx,
+    float beta,
+    float *y, int incy) {
+  CCE(cublasSgemv(CUBLAS_HANDLE::getInstance(), trans, m, n, &alpha, A, lda, x, incx, &beta, y, incy));
+}
+
+template <>
+void device_matrix<double>::cublas_gemv(
+    cublasOperation_t trans,
+    int m, int n,
+    double alpha,
+    const double *A, int lda,
+    const double *x, int incx,
+    double beta,
+    double *y, int incy) {
+  CCE(cublasDgemv(CUBLAS_HANDLE::getInstance(), trans, m, n, &alpha, A, lda, x, incx, &beta, y, incy));
+}
+
+template <>
 void device_matrix<float>::cublas_nrm2(int n, const float *x, int incx, float *result) {
   CCE(cublasSnrm2(CUBLAS_HANDLE::getInstance(), n, x, incx, result));
 }

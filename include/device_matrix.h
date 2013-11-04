@@ -134,6 +134,15 @@ public:
       T beta , const T *B, int ldb,
       T *C, int ldc);
 
+  static void cublas_gemv(
+      cublasOperation_t trans,
+      int m, int n,
+      T alpha,
+      const T *A, int lda,
+      const T *x, int incx,
+      T beta,
+      T *y, int incy);
+
   static void cublas_nrm2(int n, const T *x, int incx, T *result);
 
   static void cublas_scal(int n, T alpha, T *x, int incx);
