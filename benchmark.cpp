@@ -1,7 +1,6 @@
 #include <iostream>
 
 #include <device_matrix.h>
-
 using namespace std;
 
 typedef device_matrix<float> mat;
@@ -13,10 +12,18 @@ struct Timer {
   cudaEvent_t start, stop;
 };
 
+template <typename T>
+void randomInit(device_matrix<T>& m) {
+  T* h_data = new T [m.size()];
+  for (int i=0; i<m.size(); ++i)
+    h_data[i] = rand() / (T) RAND_MAX;
+  cudaMemcpy(m.getData(), h_data, m.size() * sizeof(T), cudaMemcpyHostToDevice);
+  delete [] h_data;
+}
+
 void benchmark();
 void matrixMul(int m, int n, int l);
 void showGFlops(double flops, float time);
-void randomInit(mat& m);
 
 int main (int argc, char* argv[]) {
   benchmark();
@@ -46,7 +53,7 @@ void matrixMul(int m, int n, int l) {
   // ===== Method 1 : sgemm(A,B,C) =====
   timer1.tic();
   for (int i=0; i<nIter; ++i)
-    sgemm(A, B, C);
+    gemm(A, B, C);
   float avgTime1 = timer1.toc() / nIter;
 
   // ===== Method 2 : C = A*B =====
@@ -95,12 +102,4 @@ float Timer::toc() {
 
   float diff = 0.0f;
   CCE(cudaEventElapsedTime(&diff , start, stop));
-}
-
-void randomInit(mat& m) {
-  float* h_data = new float [m.size()];
-  for (int i=0; i<m.size(); ++i)
-    h_data[i] = rand() / (float) RAND_MAX;
-  cudaMemcpy(m.getData(), h_data, m.size() * sizeof(float), cudaMemcpyHostToDevice);
-  delete [] h_data;
 }

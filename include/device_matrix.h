@@ -3,17 +3,8 @@
 
 #include <cassert>
 #include <string>
+#include <iostream>
 using namespace std;
-
-#ifdef HAS_HOST_MATRIX
-#include <matrix.h>
-#define host_matrix Matrix2D
-#endif
-
-#include <thrust/transform_reduce.h>
-#include <thrust/functional.h>
-#include <thrust/host_vector.h>
-#include <thrust/device_vector.h>
 
 /* Includes, cuda */
 #include <cuda_runtime.h>
@@ -21,7 +12,6 @@ using namespace std;
 #include <helper_cuda.h>
 
 #define CCE(x) checkCudaErrors(x)
-#define STRIDE (sizeof(T) / sizeof(float))
 
 template <typename T>
 class SCALAR_MEMORY_BUFFER {
@@ -32,7 +22,7 @@ public:
   }
 private:
   SCALAR_MEMORY_BUFFER(): _ptr(NULL) {
-    float scalar = 1;
+    T scalar = 1;
     CCE(cudaMalloc((void **) &_ptr, sizeof(T)));
     CCE(cudaMemcpy(_ptr, &scalar, sizeof(T), cudaMemcpyHostToDevice));
   };
@@ -72,15 +62,9 @@ public:
   // Copy Constructor 
   device_matrix(const device_matrix<T>& source);
 
+#ifdef HAVE_THRUST_DEVICE_VECTOR_H
   // Conversion operator
   operator thrust::device_vector<T>() const;
-
-#ifdef HAS_HOST_MATRIX
-  // Constructor from Host Matrix
-  device_matrix(const host_matrix<T>& h_matrix);
-  
-  // Conversion operator
-  operator host_matrix<T>() const;
 #endif
 
   // Destructor
@@ -119,10 +103,6 @@ public:
   template <typename S>
   friend void swap(device_matrix<S>& lhs, device_matrix<S>& rhs);
 
-  friend void sgemm(const device_matrix<float>& A, const device_matrix<float>& B, device_matrix<float>& C, float alpha, float beta);
-
-  friend void sgeam(const device_matrix<float>& A, const device_matrix<float>& B, device_matrix<float>& C, float alpha, float beta);
-
   // Operator Assignment:
   // call copy constructor first, and swap with the temp variable
   device_matrix<T>& operator = (device_matrix<T> rhs);
@@ -137,6 +117,40 @@ public:
   size_t getCols() const { return _cols; }
   T* getData() const { return _data; }
   void save(const string& filename) const;
+
+  static void cublas_gemm(
+    cublasOperation_t transA, cublasOperation_t transB,
+    int m, int n, int k,
+    T alpha,
+    const T* A, int lda,
+    const T* B, int ldb,
+    T beta,
+    T* C, int ldc);
+
+  static void cublas_geam(
+      cublasOperation_t transA, cublasOperation_t transB,
+      int m, int n,
+      T alpha, const T *A, int lda,
+      T beta , const T *B, int ldb,
+      T *C, int ldc);
+
+  static void cublas_gemv(
+      cublasOperation_t trans,
+      int m, int n,
+      T alpha,
+      const T *A, int lda,
+      const T *x, int incx,
+      T beta,
+      T *y, int incy);
+
+  static void cublas_nrm2(int n, const T *x, int incx, T *result);
+
+  static void cublas_scal(int n, T alpha, T *x, int incx);
+
+  static void cublas_axpy(
+      int n, T alpha,
+      const T *x, int incx,
+      T *y, int incy);
 
 private:
 
@@ -153,12 +167,47 @@ void swap(device_matrix<T>& lhs, device_matrix<T>& rhs) {
   swap(lhs._data, rhs._data);
 }
 
-typedef device_matrix<float> dfmat;
-typedef thrust::device_vector<float> dfvec;
-void sgemm(const dfmat& A, const dfmat& B, dfmat& C, float alpha = 1.0, float beta = 0.0);
-void sgeam(const dfmat& A, const dfmat& B, dfmat& C, float alpha = 1.0, float beta = 1.0);
-// void saxpy(const dfmat& A, dfmat& B, float alpha = 1.0f);
-float snrm2(const dfmat& A);
+#define dmat device_matrix<T>
+template <typename T>
+T nrm2(const dmat& A) {
+  T result;
+  device_matrix<T>::cublas_nrm2(A.size(), A.getData(), 1, &result);
+  return result;
+}
+
+template <typename T>
+void gemm(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 0.0) {
+  // Perform C = αA*B + βC, not transpose on A and B
+  size_t m = A.getRows();
+  size_t n = B.getCols();
+  C.resize(m, n);
+
+  size_t k = A.getCols();
+
+  int lda = A.getRows();
+  int ldb = B.getRows();
+  int ldc = C.getRows();
+
+  device_matrix<T>::cublas_gemm(CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, alpha, A.getData(), lda, B.getData(), ldb, beta, C.getData(), ldc);
+}
+
+template <typename T>
+void geam(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 1.0) {
+  // Perform C = αA + βB, not transpose on A and B
+  assert(A.getRows() == B.getRows() && A.getCols() == B.getCols());
+  
+  size_t m = A.getRows();
+  size_t n = A.getCols();
+  C.resize(m, n);
+
+  int lda = A.getRows();
+  int ldb = B.getRows();
+  int ldc = C.getRows();
+
+  device_matrix<T>::cublas_geam(CUBLAS_OP_N, CUBLAS_OP_N, m, n, alpha, A.getData(), lda, beta, B.getData(), ldb, C.getData(), ldc);
+}
+#undef dmat
+
 
 template <typename T, typename U>
 device_matrix<T> operator + (U alpha, const device_matrix<T>& m) {

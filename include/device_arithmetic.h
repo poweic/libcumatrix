@@ -2,64 +2,11 @@
 #define __DEVICE_BLAS_H_
 
 #include <device_matrix.h>
-#ifndef __CUDACC__
-#pragma message "\33[33mPotentially wrong compiler. Please use nvcc instead \33[0m"
-#endif
 
-// =====================================
-// ===== Vector - Scalar Operators =====
-// =====================================
-#define VECTOR thrust::device_vector
-#define WHERE thrust
-#include <functional.inl>
-#include <arithmetic.inl>
-#undef VECTOR
-#undef WHERE
+#include <device_vector_operators.h>
 
 #define dvec thrust::device_vector
 #define dmat device_matrix
-
-// ====================================
-// ===== Vector Utility Functions =====
-// ====================================
-
-// L2 - norm
-template <typename T>
-T norm(const thrust::host_vector<T>& v) {
-  return std::sqrt( thrust::transform_reduce(v.begin(), v.end(), func::square<T>(), (T) 0, thrust::plus<T>()) );
-}
-
-template <typename T>
-T norm(const thrust::device_vector<T>& v) {
-  return std::sqrt( thrust::transform_reduce(v.begin(), v.end(), func::square<T>(), (T) 0, thrust::plus<T>()) );
-}
-
-// Sum
-template <typename T>
-T sum(const thrust::device_vector<T>& v) {
-  return thrust::reduce(v.begin(), v.end());
-}
-
-template <typename T>
-T sum(const device_matrix<T>& m) {
-  return thrust::reduce(m.getData(), m.getData() + m.size(), (T) 0, thrust::plus<T>());
-}
-
-// Print
-template <typename T>
-void print(const thrust::host_vector<T>& v) {
-  std::vector<T> stl_v(v.begin(), v.end());
-  printf("[");
-  for (size_t i=0; i<v.size(); ++i)
-    printf("%.4f ", v[i]);
-  printf("]\n\n");
-}
-
-template <typename T>
-void print(const thrust::device_vector<T>& v) {
-  thrust::host_vector<T> hv(v);
-  print(hv);
-}
 
 // =====================================
 // ===== Matrix - Vector Operators =====
@@ -76,16 +23,13 @@ dmat<T> operator * (const dvec<T>& col_vector, const dvec<T>& row_vector) {
   const T* cv = thrust::raw_pointer_cast(col_vector.data());
   const T* rv = thrust::raw_pointer_cast(row_vector.data());
 
-  float alpha = 1.0, beta = 0.0;
+  T alpha = 1.0, beta = 0.0;
 
   int lda = m;
   int ldb = 1;
   int ldc = m;
 
-  cublasStatus_t status;
-  status = cublasSgemm(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha, cv, lda, rv, ldb, &beta, result.getData(), ldc);
-
-  CCE(status);
+  device_matrix<T>::cublas_gemm(CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, alpha, cv, lda, rv, ldb, beta, result.getData(), ldc);
 
   return result;
 }
@@ -103,8 +47,8 @@ dmat<T> operator * (const dvec<T>& v, const dmat<T>& A) {
   assert(v.size() == A.getRows());
   device_matrix<T> m(1, A.getCols());
 
-  float alpha = 1.0, beta = 0.0;
-  CCE(cublasSgemv(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_T, A.getRows(), A.getCols(), &alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), STRIDE, &beta, m.getData(), STRIDE));
+  T alpha = 1.0, beta = 0.0;
+  device_matrix<T>::cublas_gemv(CUBLAS_OP_T, A.getRows(), A.getCols(), alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), 1, beta, m.getData(), 1);
 
   return m;
 }
@@ -115,8 +59,8 @@ dmat<T> operator * (const dmat<T>& A, const dvec<T>& v) {
 
   device_matrix<T> m(A.getRows(), 1);
 
-  float alpha = 1.0, beta = 0.0;
-  CCE(cublasSgemv(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, A.getRows(), A.getCols(), &alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), STRIDE, &beta, m.getData(), STRIDE));
+  T alpha = 1.0, beta = 0.0;
+  device_matrix<T>::cublas_gemv(CUBLAS_OP_N, A.getRows(), A.getCols(), alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), 1, beta, m.getData(), 1);
 
   return m;
 }

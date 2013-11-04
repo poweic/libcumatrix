@@ -36,10 +36,12 @@ device_matrix<T>::device_matrix(const string& filename): _rows(0), _cols(0), _da
 
   // BEWARE !!
   // BLAS stores data in column-major
+  const char *rspecifier = (sizeof(T) / sizeof(float) == 1) ? "%f" : "%lf";
+
   T* data = new T[_rows*_cols];
   for (size_t i=0; i<_rows; ++i)
     for (size_t j=0; j<_cols; ++j)
-      fscanf(fid, "%f ", &(data[j*_rows + i]));
+      fscanf(fid, rspecifier, &(data[j*_rows + i]));
   fclose(fid);
 
   _init();
@@ -53,50 +55,12 @@ device_matrix<T>::device_matrix(const device_matrix<T>& source): _rows(source._r
   CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice));
 }
 
+#ifdef HAVE_THRUST_DEVICE_VECTOR_H
 // Conversion operator
 template <typename T>
 device_matrix<T>::operator thrust::device_vector<T>() const {
   assert(_rows == 1 || _cols == 1);
   return thrust::device_vector<T>(_data, _data + size());
-}
-
-#ifdef HAS_HOST_MATRIX
-// Constructor from Host Matrix
-template <typename T>
-device_matrix<T>::device_matrix(const host_matrix<T>& h_matrix): _rows(h_matrix.getRows()), _cols(h_matrix.getCols()), _data(NULL) {
-
-  // Convert T** to column major using transpose
-  host_matrix<T> cm_h_matrix(~h_matrix);
-  _init();
-
-  size_t n = _rows * _cols;
-
-  T* h_data = new T[n];
-  for (size_t i=0; i<_cols; ++i)
-    memcpy(h_data + i*_rows, cm_h_matrix[i], sizeof(T) * _rows);
-
-  CCE(cudaMemcpy(_data, h_data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice));
-  // CCE(cublasSetVector(n, sizeof(T), h_data, STRIDE, _data, STRIDE));
-
-  delete [] h_data;
-}
-
-template <typename T>
-device_matrix<T>::operator host_matrix<T>() const {
-
-  host_matrix<T> cm_h_matrix(_cols, _rows);
-
-  size_t n = _rows * _cols;
-  T* h_data = new T[n];
-
-  CCE(cublasGetVector(n, sizeof(T), _data, STRIDE, h_data, STRIDE));
-
-  for (size_t i=0; i<_cols; ++i)
-    memcpy(cm_h_matrix[i], h_data + i*_rows, sizeof(T) * _rows);
-
-  delete [] h_data;
-
-  return ~cm_h_matrix;
 }
 #endif
 
@@ -112,7 +76,7 @@ device_matrix<T>::~device_matrix() {
 // ===== Addition =====
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator += (T val) {
-  CCE(cublasSaxpy(CUBLAS_HANDLE::getInstance(), _rows*_cols, &val, SCALAR_MEMORY_BUFFER<T>::getBuffer(), 0, _data, 1));
+  cublas_axpy(_rows*_cols, val, SCALAR_MEMORY_BUFFER<T>::getBuffer(), 0, _data, 1);
   return *this;
 } 
 
@@ -131,7 +95,7 @@ device_matrix<T>& device_matrix<T>::operator += (const device_matrix<T>& rhs) {
 template <typename T>
 device_matrix<T> device_matrix<T>::operator + (const device_matrix<T>& rhs) const {
   device_matrix<T> result(_rows, _cols);
-  sgeam(*this, rhs, result, 1.0, 1.0);
+  geam(*this, rhs, result, (T) 1.0, (T) 1.0);
   return result;
 }
 
@@ -139,7 +103,7 @@ device_matrix<T> device_matrix<T>::operator + (const device_matrix<T>& rhs) cons
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator -= (T val) {
   val = -val;
-  CCE(cublasSaxpy(CUBLAS_HANDLE::getInstance(), _rows*_cols, &val, SCALAR_MEMORY_BUFFER<T>::getBuffer(), 0, _data, 1));
+  cublas_axpy(_rows*_cols, val, SCALAR_MEMORY_BUFFER<T>::getBuffer(), 0, _data, 1);
   return *this;
 }
 
@@ -158,7 +122,7 @@ device_matrix<T>& device_matrix<T>::operator -= (const device_matrix<T>& rhs) {
 template <typename T>
 device_matrix<T> device_matrix<T>::operator - (const device_matrix<T>& rhs) const {
   device_matrix<T> result(_rows, _cols);
-  sgeam(*this, rhs, result, 1.0, -1.0);
+  geam(*this, rhs, result, (T) 1.0, (T) -1.0);
   return result;
 }
 
@@ -176,9 +140,7 @@ device_matrix<T> device_matrix<T>::operator / (T alpha) const {
 // ===== Matrix-scalar Multiplication =====
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator *= (T alpha) {
-  cublasStatus_t status;
-  status = cublasSscal(CUBLAS_HANDLE::getInstance(), _rows*_cols, &alpha, _data, STRIDE);
-  CCE(status);
+  cublas_scal(_rows*_cols, alpha, _data, 1);
   return *this;
 }
 
@@ -198,7 +160,7 @@ device_matrix<T>& device_matrix<T>::operator *= (const device_matrix<T>& rhs) {
 template <typename T>
 device_matrix<T> device_matrix<T>::operator * (const device_matrix<T>& rhs) const {
   device_matrix<T> result(_rows, rhs._cols);
-  sgemm(*this, rhs, result);
+  gemm(*this, rhs, result);
   return result;
 }
 
@@ -258,50 +220,113 @@ void device_matrix<T>::save(const string& filename) const {
   print(fid);
   fclose(fid);
 }
+
+template <>
+void device_matrix<float>::cublas_gemm(
+  cublasOperation_t transA, cublasOperation_t transB,
+  int m, int n, int k,
+  float alpha,
+  const float* A, int lda,
+  const float* B, int ldb,
+  float beta,
+  float* C, int ldc) {
+  CCE(cublasSgemm(CUBLAS_HANDLE::getInstance(), transA, transB, m, n, k, &alpha, A, lda, B, ldb, &beta, C, ldc));
+}
+
+template <>
+void device_matrix<double>::cublas_gemm(
+  cublasOperation_t transA, cublasOperation_t transB,
+  int m, int n, int k,
+  double alpha,
+  const double* A, int lda,
+  const double* B, int ldb,
+  double beta,
+  double* C, int ldc) {
+  CCE(cublasDgemm(CUBLAS_HANDLE::getInstance(), transA, transB, m, n, k, &alpha, A, lda, B, ldb, &beta, C, ldc));
+}
+
+template <>
+void device_matrix<float>::cublas_geam(
+    cublasOperation_t transA, cublasOperation_t transB,
+    int m, int n,
+    float alpha, const float *A, int lda,
+    float beta , const float *B, int ldb,
+    float *C, int ldc) {
+  CCE(cublasSgeam(CUBLAS_HANDLE::getInstance(), transA, transB, m, n, &alpha, A, lda, &beta, B, ldb, C, ldc));
+}
+
+template <>
+void device_matrix<double>::cublas_geam(
+    cublasOperation_t transA, cublasOperation_t transB,
+    int m, int n,
+    double alpha, const double *A, int lda,
+    double beta , const double *B, int ldb,
+    double *C, int ldc) {
+  CCE(cublasDgeam(CUBLAS_HANDLE::getInstance(), transA, transB, m, n, &alpha, A, lda, &beta, B, ldb, C, ldc));
+}
+
+template <>
+void device_matrix<float>::cublas_gemv(
+    cublasOperation_t trans,
+    int m, int n,
+    float alpha,
+    const float *A, int lda,
+    const float *x, int incx,
+    float beta,
+    float *y, int incy) {
+  CCE(cublasSgemv(CUBLAS_HANDLE::getInstance(), trans, m, n, &alpha, A, lda, x, incx, &beta, y, incy));
+}
+
+template <>
+void device_matrix<double>::cublas_gemv(
+    cublasOperation_t trans,
+    int m, int n,
+    double alpha,
+    const double *A, int lda,
+    const double *x, int incx,
+    double beta,
+    double *y, int incy) {
+  CCE(cublasDgemv(CUBLAS_HANDLE::getInstance(), trans, m, n, &alpha, A, lda, x, incx, &beta, y, incy));
+}
+
+template <>
+void device_matrix<float>::cublas_nrm2(int n, const float *x, int incx, float *result) {
+  CCE(cublasSnrm2(CUBLAS_HANDLE::getInstance(), n, x, incx, result));
+}
+
+template <>
+void device_matrix<double>::cublas_nrm2(int n, const double *x, int incx, double *result) {
+  CCE(cublasDnrm2(CUBLAS_HANDLE::getInstance(), n, x, incx, result));
+}
+
+template <>
+void device_matrix<float>::cublas_scal(int n, float alpha, float *x, int incx) {
+  CCE(cublasSscal(CUBLAS_HANDLE::getInstance(), n, &alpha, x, incx));
+}
+
+template <>
+void device_matrix<double>::cublas_scal(int n, double alpha, double *x, int incx) {
+  CCE(cublasDscal(CUBLAS_HANDLE::getInstance(), n, &alpha, x, incx));
+}
+
+template <>
+void device_matrix<float>::cublas_axpy(
+    int n, float alpha,
+    const float *x, int incx,
+    float *y, int incy) {
+  CCE(cublasSaxpy(CUBLAS_HANDLE::getInstance(), n, &alpha, x, incx, y, incy));
+}
+
+template <>
+void device_matrix<double>::cublas_axpy(
+    int n, double alpha,
+    const double *x, int incx,
+    double *y, int incy) {
+  CCE(cublasDaxpy(CUBLAS_HANDLE::getInstance(), n, &alpha, x, incx, y, incy));
+}
+
 // ++++++++++++++++++++++++++++++++++++++++++++
 // +++++ Template Explicit Initialization +++++
 // ++++++++++++++++++++++++++++++++++++++++++++
 template class device_matrix<float>;
-
-float snrm2(const dfmat& A) {
-  float result;
-  cublasStatus_t status;
-  status = cublasSnrm2(CUBLAS_HANDLE::getInstance(), A.size(), A.getData(), 1, &result);
-  CCE(status);
-  return result;
-}
-
-void sgemm(const dfmat& A, const dfmat& B, dfmat& C, float alpha, float beta) {
-  // Perform C = αA*B + βC, not transpose on A and B
-  size_t m = A._rows;
-  size_t n = B._cols;
-  C.resize(m, n);
-
-  size_t k = A._cols;
-
-  int lda = A._rows;
-  int ldb = B._rows;
-  int ldc = C._rows;
-
-  cublasStatus_t status;
-  status = cublasSgemm(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha, A._data, lda, B._data, ldb, &beta, C._data, ldc);
-
-  CCE(status);
-}
-
-void sgeam(const dfmat& A, const dfmat& B, dfmat& C, float alpha, float beta) {
-  // Perform C = αA + βB, not transpose on A and B
-  assert(A._rows == B._rows && A._cols == B._cols);
-  
-  size_t m = A._rows;
-  size_t n = A._cols;
-  C.resize(m, n);
-
-  int lda = A._rows;
-  int ldb = B._rows;
-  int ldc = C._rows;
-
-  cublasStatus_t status;
-  status = cublasSgeam(CUBLAS_HANDLE::getInstance(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, &alpha, A._data, lda, &beta, B._data, ldb, C._data, ldc);
-  CCE(status);
-}
+template class device_matrix<double>;

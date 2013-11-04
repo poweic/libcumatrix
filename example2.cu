@@ -8,23 +8,21 @@
  * (2) Matrix - Vector multiplication
  * But you need "nvcc" compiler to compile these two headers
  */
-#include <device_math_ext.h>
 #include <device_arithmetic.h>
-
+#include <device_math.h>
+using namespace ext;
 using namespace std;
-typedef device_matrix<float> mat;
-typedef thrust::device_vector<float> vec;
+
+typedef double real;
+typedef device_matrix<real> mat;
+typedef thrust::device_vector<real> vec;
 
 void randomInit(vec& v);
 void randomInit(mat& m);
 
 template <typename T>
-struct square
-{
-  __host__ __device__
-    T operator()(const T& x) const { 
-      return x * x;
-    }
+struct square {
+  __host__ __device__ T operator()(const T& x) const { return x * x; }
 };
 
 int main (int argc, char* argv[]) {
@@ -39,8 +37,8 @@ int main (int argc, char* argv[]) {
   // ==========================================================
   // ===== Converion between std::vector & thrust::vector =====
   // ==========================================================
-  std::vector<float> h_x = ext::toStlVector(x);
-  x = thrust::device_vector<float>(h_x);
+  std::vector<real> h_x = ext::toStlVector(x);
+  x = thrust::device_vector<real>(h_x);
   printf("x = \n"); print(x);
 
   // =============================
@@ -90,17 +88,17 @@ int main (int argc, char* argv[]) {
 }
 
 void randomInit(mat& m) {
-  float* h_data = new float [m.size()];
-  for (int i=0; i<m.size(); ++i)
-    h_data[i] = rand() / (float) RAND_MAX;
-  cudaMemcpy(m.getData(), h_data, m.size() * sizeof(float), cudaMemcpyHostToDevice);
+  real* h_data = new real [m.size()];
+  for (size_t i=0; i<m.size(); ++i)
+    h_data[i] = rand() / (real) RAND_MAX;
+  cudaMemcpy(m.getData(), h_data, m.size() * sizeof(real), cudaMemcpyHostToDevice);
   delete [] h_data;
 }
 
 void randomInit(vec& v) {
-  float* h_data = new float [v.size()];
-  for (int i=0; i<v.size(); ++i)
-    h_data[i] = rand() / (float) RAND_MAX;
+  real* h_data = new real [v.size()];
+  for (size_t i=0; i<v.size(); ++i)
+    h_data[i] = rand() / (real) RAND_MAX;
 
   v = vec(h_data, h_data + v.size());
   delete [] h_data;
