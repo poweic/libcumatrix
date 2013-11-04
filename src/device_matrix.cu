@@ -36,10 +36,12 @@ device_matrix<T>::device_matrix(const string& filename): _rows(0), _cols(0), _da
 
   // BEWARE !!
   // BLAS stores data in column-major
+  const char *rspecifier = (sizeof(T) / sizeof(float) == 1) ? "%f" : "%lf";
+
   T* data = new T[_rows*_cols];
   for (size_t i=0; i<_rows; ++i)
     for (size_t j=0; j<_cols; ++j)
-      fscanf(fid, "%f ", &(data[j*_rows + i]));
+      fscanf(fid, rspecifier, &(data[j*_rows + i]));
   fclose(fid);
 
   _init();
@@ -138,7 +140,7 @@ device_matrix<T> device_matrix<T>::operator / (T alpha) const {
 // ===== Matrix-scalar Multiplication =====
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator *= (T alpha) {
-  cublas_scal(_rows*_cols, alpha, _data, STRIDE);
+  cublas_scal(_rows*_cols, alpha, _data, 1);
   return *this;
 }
 

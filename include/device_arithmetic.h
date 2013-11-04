@@ -23,7 +23,7 @@ dmat<T> operator * (const dvec<T>& col_vector, const dvec<T>& row_vector) {
   const T* cv = thrust::raw_pointer_cast(col_vector.data());
   const T* rv = thrust::raw_pointer_cast(row_vector.data());
 
-  float alpha = 1.0, beta = 0.0;
+  T alpha = 1.0, beta = 0.0;
 
   int lda = m;
   int ldb = 1;
@@ -47,8 +47,8 @@ dmat<T> operator * (const dvec<T>& v, const dmat<T>& A) {
   assert(v.size() == A.getRows());
   device_matrix<T> m(1, A.getCols());
 
-  float alpha = 1.0, beta = 0.0;
-  device_matrix<T>::cublas_gemv(CUBLAS_OP_T, A.getRows(), A.getCols(), alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), STRIDE, beta, m.getData(), STRIDE);
+  T alpha = 1.0, beta = 0.0;
+  device_matrix<T>::cublas_gemv(CUBLAS_OP_T, A.getRows(), A.getCols(), alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), 1, beta, m.getData(), 1);
 
   return m;
 }
@@ -59,8 +59,8 @@ dmat<T> operator * (const dmat<T>& A, const dvec<T>& v) {
 
   device_matrix<T> m(A.getRows(), 1);
 
-  float alpha = 1.0, beta = 0.0;
-  device_matrix<T>::cublas_gemv(CUBLAS_OP_N, A.getRows(), A.getCols(), alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), STRIDE, beta, m.getData(), STRIDE);
+  T alpha = 1.0, beta = 0.0;
+  device_matrix<T>::cublas_gemv(CUBLAS_OP_N, A.getRows(), A.getCols(), alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), 1, beta, m.getData(), 1);
 
   return m;
 }

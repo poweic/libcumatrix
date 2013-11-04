@@ -2,7 +2,7 @@
 #include <device_matrix.h>
 
 using namespace std;
-typedef device_matrix<float> mat;
+typedef device_matrix<double> mat;
 
 template <typename T>
 void randomInit(device_matrix<T>& m) {

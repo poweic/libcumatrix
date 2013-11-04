@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <string>
+#include <iostream>
 using namespace std;
 
 /* Includes, cuda */
@@ -11,7 +12,6 @@ using namespace std;
 #include <helper_cuda.h>
 
 #define CCE(x) checkCudaErrors(x)
-#define STRIDE (sizeof(T) / sizeof(float))
 
 template <typename T>
 class SCALAR_MEMORY_BUFFER {
@@ -171,7 +171,7 @@ void swap(device_matrix<T>& lhs, device_matrix<T>& rhs) {
 template <typename T>
 T nrm2(const dmat& A) {
   T result;
-  device_matrix<T>::cublas_nrm2(A.size(), A.getData(), STRIDE, &result);
+  device_matrix<T>::cublas_nrm2(A.size(), A.getData(), 1, &result);
   return result;
 }
 
