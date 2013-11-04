@@ -8,20 +8,25 @@ CUDA_ROOT=/usr/local/cuda
 
 EXECUTABLES=
 EXAMPLE_PROGRAM=benchmark example1 example2
+OBJ=obj/device_matrix.o
  
 .PHONY: debug all o3 ctags
-all: $(EXECUTABLES) $(EXAMPLE_PROGRAM) ctags
+all: libs $(EXECUTABLES) $(EXAMPLE_PROGRAM) ctags
 
 o3: CFLAGS+=-O3
 o3: all
 debug: CFLAGS+=-g -DDEBUG
 debug: all
 
+libs: $(OBJ) lib/libcumatrix.a
+
+lib/libcumatrix.a: $(OBJ)
+	ar rcs $@ $<
+	ranlib $@
+
 vpath %.h include/
 vpath %.cpp src/
 vpath %.cu src/
-
-OBJ=obj/device_matrix.o
 
 INCLUDE= -I include/
 
@@ -62,4 +67,4 @@ ifneq ($(shell which ctags),)
 endif
 
 clean:
-	rm -rf $(EXECUTABLES) $(EXAMPLE_PROGRAM) obj/*
+	rm -rf $(EXECUTABLES) $(EXAMPLE_PROGRAM) obj/* lib/*.a
