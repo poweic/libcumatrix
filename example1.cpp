@@ -14,6 +14,8 @@ void randomInit(device_matrix<T>& m) {
 }
 
 int main (int argc, char* argv[]) {
+
+
   mat A(16, 16), B(16, 16);
   randomInit(A);
   randomInit(B);
@@ -32,6 +34,18 @@ int main (int argc, char* argv[]) {
 
   // Or you can just call A.save();  It's more simple !
   A.save("A.mat");
+
+  // ======================================
+  // ===== Construct from CPU pointer =====
+  // ======================================
+
+  int M = 12, N = 17;
+  double* x = new double[M * N];
+
+  for (int i=0; i<M*N; ++i)
+    x[i] = i;
+
+  mat(x, M, N).print();
 
   // ===============================
   // ===== Matrix - Scalar (1) =====

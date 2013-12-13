@@ -15,6 +15,12 @@ device_matrix<T>::device_matrix(size_t r, size_t c): _rows(r), _cols(c), _data(N
 }
 
 template <typename T>
+device_matrix<T>::device_matrix(T* h_data, size_t r, size_t c): _rows(r), _cols(c), _data(NULL) {
+  _init();
+  CCE(cudaMemcpy(_data, h_data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice));
+}
+
+template <typename T>
 device_matrix<T>::device_matrix(const string& filename): _rows(0), _cols(0), _data(NULL) {
 
   const size_t MAX_BUFFER = 65536;

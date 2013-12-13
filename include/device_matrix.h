@@ -56,6 +56,9 @@ public:
 
   device_matrix(size_t r, size_t c);
 
+  // Copy data from host pointer (in column-major)
+  device_matrix(T* h_data, size_t r, size_t c);
+
   // Load from file. Ex: *.mat in text-form
   device_matrix(const string& filename);
 
