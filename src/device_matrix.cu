@@ -6,22 +6,22 @@
 // ===============================
 
 template <typename T>
-device_matrix<T>::device_matrix(): _rows(0), _cols(0), _data(NULL) { }
+device_matrix<T>::device_matrix(): _transposed(false), _rows(0), _cols(0), _data(NULL) { }
 
 template <typename T>
-device_matrix<T>::device_matrix(size_t r, size_t c): _rows(r), _cols(c), _data(NULL) {
+device_matrix<T>::device_matrix(size_t r, size_t c): _transposed(false), _rows(r), _cols(c), _data(NULL) {
   _init();
   fillwith(0);
 }
 
 template <typename T>
-device_matrix<T>::device_matrix(T* h_data, size_t r, size_t c): _rows(r), _cols(c), _data(NULL) {
+device_matrix<T>::device_matrix(T* h_data, size_t r, size_t c): _transposed(false), _rows(r), _cols(c), _data(NULL) {
   _init();
   CCE(cudaMemcpy(_data, h_data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice));
 }
 
 template <typename T>
-device_matrix<T>::device_matrix(const string& filename): _rows(0), _cols(0), _data(NULL) {
+device_matrix<T>::device_matrix(const string& filename): _transposed(false), _rows(0), _cols(0), _data(NULL) {
 
   const size_t MAX_BUFFER = 65536;
   char line[MAX_BUFFER];
@@ -58,7 +58,12 @@ device_matrix<T>::device_matrix(const string& filename): _rows(0), _cols(0), _da
 template <typename T>
 device_matrix<T>::device_matrix(const device_matrix<T>& source): _rows(source._rows), _cols(source._cols), _data(NULL) {
   _init();
-  CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice));
+  if (!source._transposed)
+    CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice));
+  else {
+    // TODO
+    // Transpose and copy at the same time (see Nvidia CUDA forum)
+  }
 }
 
 #ifdef HAVE_THRUST_DEVICE_VECTOR_H
@@ -93,15 +98,17 @@ device_matrix<T> device_matrix<T>::operator + (T val) const {
 }
 
 template <typename T>
-device_matrix<T>& device_matrix<T>::operator += (const device_matrix<T>& rhs) {
+device_matrix<T>& device_matrix<T>::operator += (device_matrix<T>& rhs) {
   *this = *this + rhs;
   return *this;
 }
 
 template <typename T>
-device_matrix<T> device_matrix<T>::operator + (const device_matrix<T>& rhs) const {
+device_matrix<T> device_matrix<T>::operator + (device_matrix<T>& rhs) {
   device_matrix<T> result(_rows, _cols);
   geam(*this, rhs, result, (T) 1.0, (T) 1.0);
+
+  _transposed = rhs._transposed = false;
   return result;
 }
 
@@ -120,15 +127,17 @@ device_matrix<T> device_matrix<T>::operator - (T val) const {
 }
 
 template <typename T>
-device_matrix<T>& device_matrix<T>::operator -= (const device_matrix<T>& rhs) {
+device_matrix<T>& device_matrix<T>::operator -= (device_matrix<T>& rhs) {
   *this = *this - rhs;
   return *this;
 }
 
 template <typename T>
-device_matrix<T> device_matrix<T>::operator - (const device_matrix<T>& rhs) const {
+device_matrix<T> device_matrix<T>::operator - (device_matrix<T>& rhs) {
   device_matrix<T> result(_rows, _cols);
   geam(*this, rhs, result, (T) 1.0, (T) -1.0);
+
+  _transposed = rhs._transposed = false;
   return result;
 }
 
@@ -158,15 +167,17 @@ device_matrix<T> device_matrix<T>::operator * (T alpha) const {
 
 // ===== Matrix-Matrix Multiplication =====
 template <typename T>
-device_matrix<T>& device_matrix<T>::operator *= (const device_matrix<T>& rhs) {
+device_matrix<T>& device_matrix<T>::operator *= (device_matrix<T>& rhs) {
   *this = *this * rhs;
   return *this;
 }
 
 template <typename T>
-device_matrix<T> device_matrix<T>::operator * (const device_matrix<T>& rhs) const {
+device_matrix<T> device_matrix<T>::operator * (device_matrix<T>& rhs) {
   device_matrix<T> result(_rows, rhs._cols);
   gemm(*this, rhs, result);
+  
+  _transposed = rhs._transposed = false;
   return result;
 }
 
@@ -175,6 +186,13 @@ device_matrix<T> device_matrix<T>::operator * (const device_matrix<T>& rhs) cons
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator = (device_matrix<T> rhs) {
   swap(*this, rhs);
+  return *this;
+}
+
+// Operator transpose
+template <typename T>
+device_matrix<T>& device_matrix<T>::operator ~ () {
+  this->_transposed = true;
   return *this;
 }
 
