@@ -28,7 +28,8 @@ vpath %.h include/
 vpath %.cpp src/
 vpath %.cu src/
 
-INCLUDE= -I include/
+INCLUDE= -I include/\
+	 -I ../math_ext/
 
 LIBRARY= -lcuda -lcublas -lcudart
 LIBRARY_PATH=-L$(CUDA_ROOT)/lib64/

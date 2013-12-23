@@ -7,6 +7,7 @@
 #include <thrust/device_vector.h>
 #define HAVE_THRUST_DEVICE_VECTOR_H 1
 
+#include <math_ext.h>
 #include <functional.inl>
 #include <device_matrix.h>
 
@@ -21,17 +22,6 @@ namespace ext {
   // ========================
   // ===== Save as File =====
   // ========================
-  template <typename T>
-  void save(const vector<T>& v, string filename) {
-    ofstream fs(filename.c_str());
-
-    fs.precision(6);
-    fs << std::scientific;
-    for (size_t i=0; i<v.size(); ++i)
-      fs << v[i] << endl;
-
-    fs.close();
-  }
 
   template <typename T>
   void save(const thrust::device_vector<T>& v, string filename) {
@@ -41,18 +31,6 @@ namespace ext {
   // ==========================
   // ===== Load from File =====
   // ==========================
-  template <typename T>
-  void load(vector<T>& v, string filename) {
-    v.clear();
-
-    ifstream fs(filename.c_str());
-
-    T t;
-    while (fs >> t) 
-      v.push_back(t);
-
-    fs.close();
-  }
 
   template <typename T>
   thrust::device_vector<T> load(string filename) {
