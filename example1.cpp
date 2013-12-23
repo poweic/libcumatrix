@@ -78,6 +78,17 @@ int main (int argc, char* argv[]) {
   printf("A-B:\n"); (A-B).print();
   printf("A*B:\n"); (A*B).print();
   // printf("A/B:\n"); (A/B).print(); [NOT IMPLEMENTED YET]
+  
+
+  mat C(12, 8), D(8, 12);
+  randomInit(C);
+  randomInit(D);
+  C.print();
+  D.print();
+
+  printf("C + transpose(D):\n"); (C + ~D).print();
+  printf("transpose(C) + D:\n"); (~C + D).print();
+  printf("transpose(C) * transpose(D):\n"); (~C * ~D).print();
 
   return 0;
 }

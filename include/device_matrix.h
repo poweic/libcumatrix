@@ -188,10 +188,18 @@ template <typename T>
 void gemm(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 0.0) {
   // Perform C = αA*B + βC, not transpose on A and B
   size_t m = A.getRows();
-  size_t n = B.getCols();
-  C.resize(m, n);
+  size_t n = A.getCols();
+  if (A.isTransposed())
+    std::swap(m, n);
 
-  size_t k = A.getCols();
+  size_t k = B.getRows();
+  size_t l = B.getCols();
+  if (B.isTransposed())
+    std::swap(k, l);
+
+  assert(n == k);
+
+  C.resize(m, l);
 
   int lda = A.getRows();
   int ldb = B.getRows();
@@ -200,16 +208,25 @@ void gemm(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 0.0) {
   cublasOperation_t opA = A.isTransposed() ? CUBLAS_OP_T : CUBLAS_OP_N;
   cublasOperation_t opB = B.isTransposed() ? CUBLAS_OP_T : CUBLAS_OP_N;
 
-  device_matrix<T>::cublas_gemm(opA, opB, m, n, k, alpha, A.getData(), lda, B.getData(), ldb, beta, C.getData(), ldc);
+  device_matrix<T>::cublas_gemm(opA, opB, m, l, k, alpha, A.getData(), lda, B.getData(), ldb, beta, C.getData(), ldc);
 }
 
 template <typename T>
 void geam(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 1.0) {
   // Perform C = αA + βB, not transpose on A and B
-  assert(A.getRows() == B.getRows() && A.getCols() == B.getCols());
   
   size_t m = A.getRows();
   size_t n = A.getCols();
+  if (A.isTransposed())
+    std::swap(m, n);
+
+  size_t k = B.getRows();
+  size_t l = B.getCols();
+  if (B.isTransposed())
+    std::swap(k, l);
+
+  assert( m == k && n == l );
+
   C.resize(m, n);
 
   int lda = A.getRows();
