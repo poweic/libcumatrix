@@ -86,6 +86,22 @@ int main (int argc, char* argv[]) {
   C.print();
   D.print();
 
+  printf("C * D: \n");
+  (C*D).print();
+
+  mat E(10, 10);
+  mat::cublas_gemm(CUBLAS_OP_N, CUBLAS_OP_N, 10, 10, 8, 1.0, C.getData(), C.getRows(), D.getData(), D.getRows(), 0, E.getData(), E.getRows());
+
+  printf("E = C(1:10, :) * D(:, 1:10)\n");
+  E.print();
+
+  
+  mat E2(12, 11);
+  mat::cublas_geam(CUBLAS_OP_N, CUBLAS_OP_N, 10, 10, 1.0, E.getData(), 10, 1.0, E2.getData(), E2.getRows(), E2.getData(), E2.getRows());
+  printf("E2: \n");
+  E2.print();
+
+
   printf("C + transpose(D):\n"); (C + ~D).print();
   printf("transpose(C) + D:\n"); (~C + D).print();
   printf("transpose(C) * transpose(D):\n"); (~C * ~D).print();

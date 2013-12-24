@@ -57,6 +57,17 @@ namespace ext {
     print(hv);
   }
 
+  template <typename T>
+  void randn(device_matrix<T>& m) {
+    T* data = new T[m.size()];
+
+    for (size_t i=0; i<m.size(); ++i)
+      data[i] = randn<T>(0, 1);
+
+    CCE(cudaMemcpy(m.getData(), data, sizeof(T) * m.size(), cudaMemcpyHostToDevice));
+    delete [] data;
+  }
+
   // =====================
   // ===== L2 - norm =====
   // =====================
