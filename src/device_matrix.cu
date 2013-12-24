@@ -6,22 +6,40 @@
 // ===============================
 
 template <typename T>
-device_matrix<T>::device_matrix(): _transposed(false), _rows(0), _cols(0), _data(NULL) { }
+device_matrix<T>::device_matrix():
+  _transposed(false),
+  _rows(0), _cols(0),
+  _capacity(_rows * _cols),
+  _data(NULL) { }
 
 template <typename T>
-device_matrix<T>::device_matrix(size_t r, size_t c): _transposed(false), _rows(r), _cols(c), _data(NULL) {
+device_matrix<T>::device_matrix(size_t r, size_t c):
+  _transposed(false),
+  _rows(r), _cols(c),
+  _capacity(_rows*_cols),
+  _data(NULL) {
+
   _init();
   fillwith(0);
 }
 
 template <typename T>
-device_matrix<T>::device_matrix(T* h_data, size_t r, size_t c): _transposed(false), _rows(r), _cols(c), _data(NULL) {
+device_matrix<T>::device_matrix(T* h_data, size_t r, size_t c):
+  _transposed(false),
+  _rows(r), _cols(c),
+  _capacity(_rows*_cols),
+  _data(NULL) {
+
   _init();
   CCE(cudaMemcpy(_data, h_data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice));
 }
 
 template <typename T>
-device_matrix<T>::device_matrix(const string& filename): _transposed(false), _rows(0), _cols(0), _data(NULL) {
+device_matrix<T>::device_matrix(const string& filename):
+  _transposed(false),
+  _rows(0), _cols(0),
+  _capacity(_rows*_cols),
+  _data(NULL) {
 
   const size_t MAX_BUFFER = 65536;
   char line[MAX_BUFFER];
@@ -56,7 +74,12 @@ device_matrix<T>::device_matrix(const string& filename): _transposed(false), _ro
 }
 // Copy Constructor 
 template <typename T>
-device_matrix<T>::device_matrix(const device_matrix<T>& source): _rows(source._rows), _cols(source._cols), _data(NULL) {
+device_matrix<T>::device_matrix(const device_matrix<T>& source):
+  _transposed(false),
+  _rows(source._rows), _cols(source._cols),
+  _capacity(_rows * _cols),
+  _data(NULL) {
+
   _init();
   if (!source._transposed)
     CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice));
@@ -204,6 +227,12 @@ void device_matrix<T>::_init() {
 template <typename T>
 void device_matrix<T>::resize(size_t r, size_t c) {
   if (_rows == r && _cols == c)
+    return;
+
+  _rows = r;
+  _cols = c;
+
+  if (r * c < _capacity)
     return;
 
   _rows = r;

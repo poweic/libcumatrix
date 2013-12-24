@@ -164,6 +164,8 @@ private:
 
   size_t _rows;
   size_t _cols;
+  size_t _capacity;
+
   T* _data;
 };
 
