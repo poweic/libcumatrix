@@ -262,6 +262,9 @@ void device_matrix<T>::print(FILE* fid) const {
 template <typename T>
 void device_matrix<T>::fillwith(T val) {
   cudaMemset(_data, 0, _rows * _cols * sizeof(T));
+
+  if (val != 0)
+    *this += val;
 }
 
 template <typename T>

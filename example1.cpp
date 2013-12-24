@@ -106,6 +106,10 @@ int main (int argc, char* argv[]) {
   printf("E2.resize(5, 3): \n");
   E2.print();
 
+  E2.fillwith(123);
+  printf("E2.fillwith(5): \n");
+  E2.print();
+
   return 0;
 }
 
