@@ -124,6 +124,9 @@ public:
   bool isTransposed() const { return _transposed; }
   T* getData() const { return _data; }
   void save(const string& filename) const;
+  void status() const {
+    printf("\33\[33m[Info]\33[0m rows = %lu, cols = %lu, capacity = %lu\n", _rows, _cols, _capacity);
+  }
 
   static void cublas_gemm(
     cublasOperation_t transA, cublasOperation_t transB,
@@ -175,6 +178,7 @@ void swap(device_matrix<T>& lhs, device_matrix<T>& rhs) {
   swap(lhs._transposed, rhs._transposed);
   swap(lhs._rows, rhs._rows);
   swap(lhs._cols, rhs._cols);
+  swap(lhs._capacity, rhs._capacity);
   swap(lhs._data, rhs._data);
 }
 

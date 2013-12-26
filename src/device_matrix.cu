@@ -41,12 +41,14 @@ device_matrix<T>::device_matrix(const string& filename):
   _capacity(_rows*_cols),
   _data(NULL) {
 
-  const size_t MAX_BUFFER = 65536;
+  const size_t MAX_BUFFER = 262144;
   char line[MAX_BUFFER];
 
   FILE* fid = fopen(filename.c_str(), "r");
   while (fgets(line, MAX_BUFFER, fid)) {
     _rows++;
+
+    assert(line[strlen(line) - 1] == '\n');
 
     if (_cols != 0)
       continue;
@@ -69,6 +71,7 @@ device_matrix<T>::device_matrix(const string& filename):
   fclose(fid);
 
   _init();
+
   CCE(cudaMemcpy(_data, data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice));
   delete [] data;
 }
@@ -221,22 +224,23 @@ device_matrix<T>& device_matrix<T>::operator ~ () {
 
 template <typename T>
 void device_matrix<T>::_init() {
+  _capacity = _rows * _cols;
   CCE(cudaMalloc((void **)&_data, _rows * _cols * sizeof(T)));
 }
 
 template <typename T>
 void device_matrix<T>::resize(size_t r, size_t c) {
+  // printf("trying to resize from (%lu, %lu) => (%lu, %lu), with original capacity = %lu\n", _rows, _cols, r, c, _capacity);
   if (_rows == r && _cols == c)
     return;
 
   _rows = r;
   _cols = c;
 
-  if (r * c < _capacity)
+  if (r * c <= _capacity)
     return;
 
-  _rows = r;
-  _cols = c;
+  CCE(cudaFree(_data));
   _init();
   fillwith(0);
 }
