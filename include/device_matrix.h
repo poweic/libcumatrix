@@ -115,6 +115,7 @@ public:
 
   void _init();
   void resize(size_t r, size_t c);
+  void reserve(size_t capacity);
   void print(FILE* fid = stdout) const;
 
   void fillwith(T val);

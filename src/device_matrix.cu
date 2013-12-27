@@ -246,6 +246,21 @@ void device_matrix<T>::resize(size_t r, size_t c) {
 }
 
 template <typename T>
+void device_matrix<T>::reserve(size_t capacity) {
+  if (capacity <= _capacity)
+    return;
+
+  _capacity = capacity;
+
+  T* buffer;
+  CCE(cudaMalloc((void **)&buffer, _capacity * sizeof(T)));
+  CCE(cudaMemset(buffer, 0, _capacity * sizeof(T)));
+  CCE(cudaMemcpy(buffer, _data, sizeof(T) * size(), cudaMemcpyDeviceToDevice));
+  CCE(cudaFree(_data));
+  _data = buffer;
+}
+
+template <typename T>
 void device_matrix<T>::print(FILE* fid) const {
 
   T* data = new T[size()];
@@ -253,7 +268,7 @@ void device_matrix<T>::print(FILE* fid) const {
 
   for (size_t i=0; i<_rows; ++i) {
     for (size_t j=0; j<_cols; ++j)
-      fprintf(fid, "%.7f ", data[j*_rows + i]);
+      fprintf(fid, "%g ", data[j*_rows + i]);
     fprintf(fid, "\n");
   }
 
