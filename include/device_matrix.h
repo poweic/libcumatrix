@@ -255,7 +255,7 @@ device_matrix<T> operator + (U alpha, const device_matrix<T>& m) {
 
 template <typename T, typename U>
 device_matrix<T> operator - (U alpha, const device_matrix<T>& m) {
-  return m - (T) alpha;
+  return (m - (T) alpha) * -1.0;
 }
 
 template <typename T, typename U>
