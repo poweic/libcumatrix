@@ -1,7 +1,6 @@
 CC=gcc
 CXX=g++-4.6
 CFLAGS=
-#NVCCFLAGS=-Xcompiler "-fdump-tree-nrv"
 NVCC=nvcc -arch=sm_21 -w
 
 CUDA_ROOT=/usr/local/cuda

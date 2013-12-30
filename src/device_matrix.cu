@@ -365,6 +365,17 @@ void device_matrix<double>::cublas_gemv(
 }
 
 template <>
+void device_matrix<float>::cublas_iamax(int n, const float *x, int incx, int *result) {
+  CCE(cublasIsamax(CUBLAS_HANDLE::getInstance(), n, x, incx, result));
+}
+
+template <>
+void device_matrix<double>::cublas_iamax(int n, const double *x, int incx, int *result) {
+  CCE(cublasIdamax(CUBLAS_HANDLE::getInstance(), n, x, incx, result));
+}
+
+
+template <>
 void device_matrix<float>::cublas_nrm2(int n, const float *x, int incx, float *result) {
   CCE(cublasSnrm2(CUBLAS_HANDLE::getInstance(), n, x, incx, result));
 }

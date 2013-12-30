@@ -154,6 +154,8 @@ public:
       T beta,
       T *y, int incy);
 
+  static void cublas_iamax(int n, const T* x, int incx, int* result);
+
   static void cublas_nrm2(int n, const T *x, int incx, T *result);
 
   static void cublas_scal(int n, T alpha, T *x, int incx);
@@ -190,6 +192,15 @@ T nrm2(const dmat& A) {
   device_matrix<T>::cublas_nrm2(A.size(), A.getData(), 1, &result);
   return result;
 }
+
+/*template <typename T>
+vector<int> maxIdxPerRow(const dmat& A) {
+  vector<int> result(A.getRows());
+  for (int i=0; i<A.getRows(); ++i)
+    device_matrix<T>::cublas_iamax(A.getCols(), A.getData() + i, A.getRows(), &result[i]);
+
+  return result;
+}*/
 
 template <typename T>
 void gemm(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 0.0) {

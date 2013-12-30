@@ -1,8 +1,9 @@
 #include <iostream>
+#include <vector>
 #include <device_matrix.h>
 
 using namespace std;
-typedef device_matrix<double> mat;
+typedef device_matrix<float> mat;
 
 template <typename T>
 void randomInit(device_matrix<T>& m) {
@@ -24,7 +25,8 @@ int main (int argc, char* argv[]) {
   // ============================
   A.print();
   B.print();
-  
+
+
   // To save matrix, you can pass a file descriptor (fid) to print()
   FILE* fid = fopen("A.mat", "w");
   if (fid != NULL)
@@ -39,7 +41,7 @@ int main (int argc, char* argv[]) {
   // ======================================
 
   int M = 12, N = 17;
-  double* x = new double[M * N];
+  float* x = new float[M * N];
 
   for (int i=0; i<M*N; ++i)
     x[i] = i;
