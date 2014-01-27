@@ -50,7 +50,8 @@ dmat<T> operator * (const dvec<T>& v, const dmat<T>& A) {
   // u = v*A = trans( trans(A) * trans(v) )
   // And there's nothing to do when a vector is transposed
   
-  cublasOperation_t op = A.isTransposed() ? CUBLAS_OP_N : CUBLAS_OP_T;
+  // cublasOperation_t op = A.isTransposed() ? CUBLAS_OP_N : CUBLAS_OP_T;
+  cublasOperation_t op = CUBLAS_OP_T;
 
   T alpha = 1.0, beta = 0.0;
   device_matrix<T>::cublas_gemv(op, A.getRows(), A.getCols(), alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), 1, beta, m.getData(), 1);
@@ -64,7 +65,8 @@ dmat<T> operator * (const dmat<T>& A, const dvec<T>& v) {
 
   device_matrix<T> m(A.getRows(), 1);
 
-  cublasOperation_t op = A.isTransposed() ? CUBLAS_OP_T : CUBLAS_OP_N;
+  // cublasOperation_t op = A.isTransposed() ? CUBLAS_OP_T : CUBLAS_OP_N;
+  cublasOperation_t op = CUBLAS_OP_N;
 
   T alpha = 1.0, beta = 0.0;
   device_matrix<T>::cublas_gemv(op, A.getRows(), A.getCols(), alpha, A.getData(), A.getRows(), thrust::raw_pointer_cast(v.data()), 1, beta, m.getData(), 1);

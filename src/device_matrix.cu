@@ -7,14 +7,12 @@
 
 template <typename T>
 device_matrix<T>::device_matrix():
-  _transposed(false),
   _rows(0), _cols(0),
   _capacity(_rows * _cols),
   _data(NULL) { }
 
 template <typename T>
 device_matrix<T>::device_matrix(size_t r, size_t c):
-  _transposed(false),
   _rows(r), _cols(c),
   _capacity(_rows*_cols),
   _data(NULL) {
@@ -25,7 +23,6 @@ device_matrix<T>::device_matrix(size_t r, size_t c):
 
 template <typename T>
 device_matrix<T>::device_matrix(T* h_data, size_t r, size_t c):
-  _transposed(false),
   _rows(r), _cols(c),
   _capacity(_rows*_cols),
   _data(NULL) {
@@ -36,7 +33,6 @@ device_matrix<T>::device_matrix(T* h_data, size_t r, size_t c):
 
 template <typename T>
 device_matrix<T>::device_matrix(const string& filename):
-  _transposed(false),
   _rows(0), _cols(0),
   _capacity(_rows*_cols),
   _data(NULL) {
@@ -78,18 +74,12 @@ device_matrix<T>::device_matrix(const string& filename):
 // Copy Constructor 
 template <typename T>
 device_matrix<T>::device_matrix(const device_matrix<T>& source):
-  _transposed(false),
   _rows(source._rows), _cols(source._cols),
   _capacity(_rows * _cols),
   _data(NULL) {
 
   _init();
-  if (!source._transposed)
-    CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice));
-  else {
-    // TODO
-    // Transpose and copy at the same time (see Nvidia CUDA forum)
-  }
+  CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice));
 }
 
 #ifdef HAVE_THRUST_DEVICE_VECTOR_H
@@ -124,17 +114,28 @@ device_matrix<T> device_matrix<T>::operator + (T val) const {
 }
 
 template <typename T>
-device_matrix<T>& device_matrix<T>::operator += (device_matrix<T>& rhs) {
+device_matrix<T>& device_matrix<T>::operator += (const device_matrix<T>& rhs) {
   *this = *this + rhs;
   return *this;
 }
 
 template <typename T>
-device_matrix<T> device_matrix<T>::operator + (device_matrix<T>& rhs) {
+device_matrix<T> device_matrix<T>::operator + (const device_matrix<T>& rhs) {
   device_matrix<T> result(_rows, _cols);
   geam(*this, rhs, result, (T) 1.0, (T) 1.0);
+  return result;
+}
 
-  _transposed = rhs._transposed = false;
+template <typename T>
+device_matrix<T>& device_matrix<T>::operator += (const typename device_matrix<T>::Transposed& rhs) {
+  *this = *this + rhs;
+  return *this;
+}
+
+template <typename T>
+device_matrix<T> device_matrix<T>::operator + (const typename device_matrix<T>::Transposed& rhs) {
+  device_matrix<T> result(_rows, _cols);
+  geam(*this, rhs._m, result, (T) 1.0, (T) 1.0, false, true);
   return result;
 }
 
@@ -153,17 +154,28 @@ device_matrix<T> device_matrix<T>::operator - (T val) const {
 }
 
 template <typename T>
-device_matrix<T>& device_matrix<T>::operator -= (device_matrix<T>& rhs) {
+device_matrix<T>& device_matrix<T>::operator -= (const device_matrix<T>& rhs) {
   *this = *this - rhs;
   return *this;
 }
 
 template <typename T>
-device_matrix<T> device_matrix<T>::operator - (device_matrix<T>& rhs) {
+device_matrix<T> device_matrix<T>::operator - (const device_matrix<T>& rhs) {
   device_matrix<T> result(_rows, _cols);
   geam(*this, rhs, result, (T) 1.0, (T) -1.0);
+  return result;
+}
 
-  _transposed = rhs._transposed = false;
+template <typename T>
+device_matrix<T>& device_matrix<T>::operator -= (const typename device_matrix<T>::Transposed& rhs) {
+  *this = *this - rhs;
+  return *this;
+}
+
+template <typename T>
+device_matrix<T> device_matrix<T>::operator - (const typename device_matrix<T>::Transposed& rhs) {
+  device_matrix<T> result(_rows, _cols);
+  geam(*this, rhs._m, result, (T) 1.0, (T) -1.0, false, true);
   return result;
 }
 
@@ -193,17 +205,28 @@ device_matrix<T> device_matrix<T>::operator * (T alpha) const {
 
 // ===== Matrix-Matrix Multiplication =====
 template <typename T>
-device_matrix<T>& device_matrix<T>::operator *= (device_matrix<T>& rhs) {
+device_matrix<T>& device_matrix<T>::operator *= (const device_matrix<T>& rhs) {
   *this = *this * rhs;
   return *this;
 }
 
 template <typename T>
-device_matrix<T> device_matrix<T>::operator * (device_matrix<T>& rhs) {
+device_matrix<T> device_matrix<T>::operator * (const device_matrix<T>& rhs) {
   device_matrix<T> result(_rows, rhs._cols);
-  gemm(*this, rhs, result);
-  
-  _transposed = rhs._transposed = false;
+  gemm(*this, rhs, result, (T) 1.0, (T) 0.0);
+  return result;
+}
+
+template <typename T>
+device_matrix<T>& device_matrix<T>::operator *= (const Transposed& rhs) {
+  *this = *this * rhs;
+  return *this;
+}
+
+template <typename T>
+device_matrix<T> device_matrix<T>::operator * (const Transposed& rhs) {
+  device_matrix<T> result(_rows, rhs._m._rows);
+  gemm(*this, rhs._m, result, (T) 1.0, (T) 0.0, false, true);
   return result;
 }
 
@@ -217,9 +240,8 @@ device_matrix<T>& device_matrix<T>::operator = (device_matrix<T> rhs) {
 
 // Operator transpose
 template <typename T>
-device_matrix<T>& device_matrix<T>::operator ~ () {
-  this->_transposed = true;
-  return *this;
+device_matrix<T>::Transposed device_matrix<T>::operator ~ () {
+  return device_matrix<T>::Transposed(*this);
 }
 
 template <typename T>

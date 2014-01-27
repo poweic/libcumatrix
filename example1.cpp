@@ -59,8 +59,8 @@ int main (int argc, char* argv[]) {
   // ===============================
   // ===== Matrix - Scalar (2) =====
   // ===============================
-  printf("3.14 + A\n"); (3.14 + A).print();
-  printf("1.23 * A\n"); (1.23 * A).print();
+  printf("3.14 + A\n"); (3.14f + A).print();
+  printf("1.23 * A\n"); (1.23f * A).print();
   // printf("3.14 - A\n"); (3.14 - A).print(); [NOT IMPLEMENTED YET]
   // printf("1.23 / A\n"); (1.23 / A).print(); [NOT IMPLEMENTED YET]
   
@@ -80,27 +80,40 @@ int main (int argc, char* argv[]) {
   printf("A*B:\n"); (A*B).print();
   // printf("A/B:\n"); (A/B).print(); [NOT IMPLEMENTED YET]
 
-  mat C(12, 8), D(8, 12);
+  mat C(12, 8), D(8, 12), E(12, 8);
   randomInit(C);
   randomInit(D);
-  C.print();
-  D.print();
+  randomInit(E);
+  printf("C:\n"); C.print();
+  printf("D:\n"); D.print();
+  printf("E:\n"); E.print();
 
-  printf("C * D: \n");
-  (C*D).print();
+  printf("C + ~D:\n"); (C + ~D).print();
+  printf("~C + D:\n"); (~C + D).print();
+  
+  printf("C - ~D:\n"); (C - ~D).print();
+  printf("~C - D:\n"); (~C - D).print();
 
-  printf("C + transpose(D):\n"); (C + ~D).print();
-  printf("transpose(C) + D:\n"); (~C + D).print();
-  printf("transpose(C) * transpose(D):\n"); (~C * ~D).print();
+  printf("C * D: \n"); (C*D).print();
+  printf("~C * ~D:\n"); (~C * ~D).print();
 
-  mat E(10, 10);
-  mat::cublas_gemm(CUBLAS_OP_N, CUBLAS_OP_N, 10, 10, 8, 1.0, C.getData(), C.getRows(), D.getData(), D.getRows(), 0, E.getData(), E.getRows());
+  printf("C * ~E:\n"); (C * ~E).print();
+  printf("~C * E:\n"); (~C * E).print();
 
-  printf("E = C(1:10, :) * D(:, 1:10)\n");
-  E.print();
+  printf("C *= ~E:\n"); (C *= ~E).print();
+  printf("C += ~C:\n"); (C += ~C).print();
+  printf("C -= ~C:\n"); (C -= ~C).print();
+
+  // ==============================================================
+
+  mat E1(10, 10);
+  mat::cublas_gemm(CUBLAS_OP_N, CUBLAS_OP_N, 10, 10, 8, 1.0, E.getData(), E.getRows(), D.getData(), D.getRows(), 0, E1.getData(), E1.getRows());
+
+  printf("E1 = E(1:10, :) * D(:, 1:10)\n");
+  E1.print();
 
   mat E2(12, 11);
-  mat::cublas_geam(CUBLAS_OP_N, CUBLAS_OP_N, 10, 10, 1.0, E.getData(), 10, 1.0, E2.getData(), E2.getRows(), E2.getData(), E2.getRows());
+  mat::cublas_geam(CUBLAS_OP_N, CUBLAS_OP_N, 10, 10, 1.0, E1.getData(), 10, 1.0, E2.getData(), E2.getRows(), E2.getData(), E2.getRows());
   printf("E2: \n");
   E2.print();
 

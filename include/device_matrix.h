@@ -50,6 +50,42 @@ private:
 
 template <typename T>
 class device_matrix {
+  public:
+  class Transposed {
+    public:
+
+      // ===== Addition =====
+      device_matrix<T> operator + (const device_matrix<T>& rhs) {
+	device_matrix<T> result(_m._rows, _m._cols);
+	geam(_m, rhs, result, (T) 1.0, (T) 1.0, true, false);
+	return result;
+      }
+
+      // ===== Substraction =====
+      device_matrix<T> operator - (const device_matrix<T>& rhs) {
+	device_matrix<T> result(_m._rows, _m._cols);
+	geam(_m, rhs, result, (T) 1.0, (T) -1.0, true, false);
+	return result;
+      }
+
+      // ===== Matrix-Matrix Multiplication =====
+      device_matrix<T> operator * (const device_matrix<T>& rhs) {
+	device_matrix<T> result(_m._cols, rhs._cols);
+	gemm(_m, rhs, result, (T) 1.0, (T) 0.0, true, false);
+	return result;
+      }
+
+      device_matrix<T> operator * (const Transposed& rhs) {
+	device_matrix<T> result(_m._cols, rhs._m._rows);
+	gemm(_m, rhs._m, result, (T) 1.0, (T) 0.0, true, true);
+	return result;
+      }
+
+    // private:
+      Transposed(const device_matrix<T>& m): _m(m) {}
+      const device_matrix<T>& _m;
+  };
+
 public:
   // default constructor 
   device_matrix();
@@ -81,15 +117,21 @@ public:
   device_matrix<T>& operator += (T val);
   device_matrix<T> operator + (T val) const;
   
-  device_matrix<T>& operator += (device_matrix<T>& rhs);
-  device_matrix<T> operator + (device_matrix<T>& rhs);
+  device_matrix<T>& operator += (const device_matrix<T>& rhs);
+  device_matrix<T> operator + (const device_matrix<T>& rhs);
+
+  device_matrix<T>& operator += (const Transposed& rhs);
+  device_matrix<T> operator + (const Transposed& rhs);
 
   // ===== Substraction =====
   device_matrix<T>& operator -= (T val);
   device_matrix<T> operator - (T val) const;
   
-  device_matrix<T>& operator -= (device_matrix<T>& rhs);
-  device_matrix<T> operator - (device_matrix<T>& rhs);
+  device_matrix<T>& operator -= (const device_matrix<T>& rhs);
+  device_matrix<T> operator - (const device_matrix<T>& rhs);
+
+  device_matrix<T>& operator -= (const Transposed& rhs);
+  device_matrix<T> operator - (const Transposed& rhs);
 
   // ===== Division =====
   device_matrix<T>& operator /= (T alpha);
@@ -100,8 +142,11 @@ public:
   device_matrix<T> operator * (T alpha) const;
 
   // ===== Matrix-Matrix Multiplication =====
-  device_matrix<T>& operator *= (device_matrix<T>& rhs);
-  device_matrix<T> operator * (device_matrix<T>& rhs);
+  device_matrix<T>& operator *= (const device_matrix<T>& rhs);
+  device_matrix<T> operator * (const device_matrix<T>& rhs);
+
+  device_matrix<T>& operator *= (const Transposed& rhs);
+  device_matrix<T> operator * (const Transposed& rhs);
 
   template <typename S>
   friend void swap(device_matrix<S>& lhs, device_matrix<S>& rhs);
@@ -111,7 +156,8 @@ public:
   device_matrix<T>& operator = (device_matrix<T> rhs);
 
   // Operator transpose
-  device_matrix<T>& operator ~ ();
+  // device_matrix<T>& operator ~ ();
+  Transposed operator ~ ();
 
   void _init();
   void resize(size_t r, size_t c);
@@ -122,9 +168,9 @@ public:
   size_t size() const { return _rows * _cols; }
   size_t getRows() const { return _rows; }
   size_t getCols() const { return _cols; }
-  bool isTransposed() const { return _transposed; }
   T* getData() const { return _data; }
   void save(const string& filename) const;
+
   void status() const {
     printf("\33\[33m[Info]\33[0m rows = %lu, cols = %lu, capacity = %lu\n", _rows, _cols, _capacity);
   }
@@ -166,8 +212,6 @@ public:
       T *y, int incy);
 
 private:
-  bool _transposed;
-
   size_t _rows;
   size_t _cols;
   size_t _capacity;
@@ -178,7 +222,6 @@ private:
 template <typename T>
 void swap(device_matrix<T>& lhs, device_matrix<T>& rhs) {
   using std::swap;
-  swap(lhs._transposed, rhs._transposed);
   swap(lhs._rows, rhs._rows);
   swap(lhs._cols, rhs._cols);
   swap(lhs._capacity, rhs._capacity);
@@ -203,16 +246,16 @@ vector<int> maxIdxPerRow(const dmat& A) {
 }*/
 
 template <typename T>
-void gemm(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 0.0) {
+void gemm(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 0.0, bool transA = false, bool transB = false) {
   // Perform C = αA*B + βC, not transpose on A and B
   size_t m = A.getRows();
   size_t n = A.getCols();
-  if (A.isTransposed())
+  if (transA)
     std::swap(m, n);
 
   size_t k = B.getRows();
   size_t l = B.getCols();
-  if (B.isTransposed())
+  if (transB)
     std::swap(k, l);
 
   assert(n == k);
@@ -223,24 +266,24 @@ void gemm(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 0.0) {
   int ldb = B.getRows();
   int ldc = C.getRows();
 
-  cublasOperation_t opA = A.isTransposed() ? CUBLAS_OP_T : CUBLAS_OP_N;
-  cublasOperation_t opB = B.isTransposed() ? CUBLAS_OP_T : CUBLAS_OP_N;
+  cublasOperation_t opA = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
+  cublasOperation_t opB = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
 
   device_matrix<T>::cublas_gemm(opA, opB, m, l, k, alpha, A.getData(), lda, B.getData(), ldb, beta, C.getData(), ldc);
 }
 
 template <typename T>
-void geam(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 1.0) {
+void geam(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 1.0, bool transA = false, bool transB = false) {
   // Perform C = αA + βB, not transpose on A and B
   
   size_t m = A.getRows();
   size_t n = A.getCols();
-  if (A.isTransposed())
+  if (transA)
     std::swap(m, n);
 
   size_t k = B.getRows();
   size_t l = B.getCols();
-  if (B.isTransposed())
+  if (transB)
     std::swap(k, l);
 
   assert( m == k && n == l );
@@ -251,26 +294,25 @@ void geam(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 1.0) {
   int ldb = B.getRows();
   int ldc = C.getRows();
 
-  cublasOperation_t opA = A.isTransposed() ? CUBLAS_OP_T : CUBLAS_OP_N;
-  cublasOperation_t opB = B.isTransposed() ? CUBLAS_OP_T : CUBLAS_OP_N;
+  cublasOperation_t opA = transA ? CUBLAS_OP_T : CUBLAS_OP_N;
+  cublasOperation_t opB = transB ? CUBLAS_OP_T : CUBLAS_OP_N;
 
   device_matrix<T>::cublas_geam(opA, opB, m, n, alpha, A.getData(), lda, beta, B.getData(), ldb, C.getData(), ldc);
 }
 #undef dmat
 
-
-template <typename T, typename U>
-device_matrix<T> operator + (U alpha, const device_matrix<T>& m) {
+template <typename T>
+device_matrix<T> operator + (T alpha, const device_matrix<T>& m) {
   return m + (T) alpha;
 }
 
-template <typename T, typename U>
-device_matrix<T> operator - (U alpha, const device_matrix<T>& m) {
-  return (m - (T) alpha) * -1.0;
+template <typename T>
+device_matrix<T> operator - (T alpha, const device_matrix<T>& m) {
+  return (m - (T) alpha) * - 1.0;
 }
 
-template <typename T, typename U>
-device_matrix<T> operator * (U alpha, const device_matrix<T>& m) {
+template <typename T>
+device_matrix<T> operator * (T alpha, const device_matrix<T>& m) {
   return m * (T) alpha;
 }
 
