@@ -117,8 +117,8 @@ public:
   device_matrix<T>& operator += (T val);
   device_matrix<T> operator + (T val) const;
   
-  device_matrix<T>& operator += (device_matrix<T>& rhs);
-  device_matrix<T> operator + (device_matrix<T>& rhs);
+  device_matrix<T>& operator += (const device_matrix<T>& rhs);
+  device_matrix<T> operator + (const device_matrix<T>& rhs);
 
   device_matrix<T>& operator += (const Transposed& rhs);
   device_matrix<T> operator + (const Transposed& rhs);
@@ -127,8 +127,8 @@ public:
   device_matrix<T>& operator -= (T val);
   device_matrix<T> operator - (T val) const;
   
-  device_matrix<T>& operator -= (device_matrix<T>& rhs);
-  device_matrix<T> operator - (device_matrix<T>& rhs);
+  device_matrix<T>& operator -= (const device_matrix<T>& rhs);
+  device_matrix<T> operator - (const device_matrix<T>& rhs);
 
   device_matrix<T>& operator -= (const Transposed& rhs);
   device_matrix<T> operator - (const Transposed& rhs);
@@ -142,8 +142,8 @@ public:
   device_matrix<T> operator * (T alpha) const;
 
   // ===== Matrix-Matrix Multiplication =====
-  device_matrix<T>& operator *= (device_matrix<T>& rhs);
-  device_matrix<T> operator * (device_matrix<T>& rhs);
+  device_matrix<T>& operator *= (const device_matrix<T>& rhs);
+  device_matrix<T> operator * (const device_matrix<T>& rhs);
 
   device_matrix<T>& operator *= (const Transposed& rhs);
   device_matrix<T> operator * (const Transposed& rhs);

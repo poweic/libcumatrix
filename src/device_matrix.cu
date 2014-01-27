@@ -114,13 +114,13 @@ device_matrix<T> device_matrix<T>::operator + (T val) const {
 }
 
 template <typename T>
-device_matrix<T>& device_matrix<T>::operator += (device_matrix<T>& rhs) {
+device_matrix<T>& device_matrix<T>::operator += (const device_matrix<T>& rhs) {
   *this = *this + rhs;
   return *this;
 }
 
 template <typename T>
-device_matrix<T> device_matrix<T>::operator + (device_matrix<T>& rhs) {
+device_matrix<T> device_matrix<T>::operator + (const device_matrix<T>& rhs) {
   device_matrix<T> result(_rows, _cols);
   geam(*this, rhs, result, (T) 1.0, (T) 1.0);
   return result;
@@ -154,13 +154,13 @@ device_matrix<T> device_matrix<T>::operator - (T val) const {
 }
 
 template <typename T>
-device_matrix<T>& device_matrix<T>::operator -= (device_matrix<T>& rhs) {
+device_matrix<T>& device_matrix<T>::operator -= (const device_matrix<T>& rhs) {
   *this = *this - rhs;
   return *this;
 }
 
 template <typename T>
-device_matrix<T> device_matrix<T>::operator - (device_matrix<T>& rhs) {
+device_matrix<T> device_matrix<T>::operator - (const device_matrix<T>& rhs) {
   device_matrix<T> result(_rows, _cols);
   geam(*this, rhs, result, (T) 1.0, (T) -1.0);
   return result;
@@ -205,26 +205,26 @@ device_matrix<T> device_matrix<T>::operator * (T alpha) const {
 
 // ===== Matrix-Matrix Multiplication =====
 template <typename T>
-device_matrix<T>& device_matrix<T>::operator *= (device_matrix<T>& rhs) {
+device_matrix<T>& device_matrix<T>::operator *= (const device_matrix<T>& rhs) {
   *this = *this * rhs;
   return *this;
 }
 
 template <typename T>
-device_matrix<T> device_matrix<T>::operator * (device_matrix<T>& rhs) {
+device_matrix<T> device_matrix<T>::operator * (const device_matrix<T>& rhs) {
   device_matrix<T> result(_rows, rhs._cols);
   gemm(*this, rhs, result, (T) 1.0, (T) 0.0);
   return result;
 }
 
 template <typename T>
-device_matrix<T>& device_matrix<T>::operator *= (const typename device_matrix<T>::Transposed& rhs) {
+device_matrix<T>& device_matrix<T>::operator *= (const Transposed& rhs) {
   *this = *this * rhs;
   return *this;
 }
 
 template <typename T>
-device_matrix<T> device_matrix<T>::operator * (const typename device_matrix<T>::Transposed& rhs) {
+device_matrix<T> device_matrix<T>::operator * (const Transposed& rhs) {
   device_matrix<T> result(_rows, rhs._m._rows);
   gemm(*this, rhs._m, result, (T) 1.0, (T) 0.0, false, true);
   return result;
