@@ -56,6 +56,9 @@ public:
 
   device_matrix(size_t r, size_t c);
 
+  // Copy data from host pointer (in column-major)
+  device_matrix(T* h_data, size_t r, size_t c);
+
   // Load from file. Ex: *.mat in text-form
   device_matrix(const string& filename);
 
@@ -78,15 +81,15 @@ public:
   device_matrix<T>& operator += (T val);
   device_matrix<T> operator + (T val) const;
   
-  device_matrix<T>& operator += (const device_matrix<T>& rhs);
-  device_matrix<T> operator + (const device_matrix<T>& rhs) const;
+  device_matrix<T>& operator += (device_matrix<T>& rhs);
+  device_matrix<T> operator + (device_matrix<T>& rhs);
 
   // ===== Substraction =====
   device_matrix<T>& operator -= (T val);
   device_matrix<T> operator - (T val) const;
   
-  device_matrix<T>& operator -= (const device_matrix<T>& rhs);
-  device_matrix<T> operator - (const device_matrix<T>& rhs) const;
+  device_matrix<T>& operator -= (device_matrix<T>& rhs);
+  device_matrix<T> operator - (device_matrix<T>& rhs);
 
   // ===== Division =====
   device_matrix<T>& operator /= (T alpha);
@@ -97,8 +100,8 @@ public:
   device_matrix<T> operator * (T alpha) const;
 
   // ===== Matrix-Matrix Multiplication =====
-  device_matrix<T>& operator *= (const device_matrix<T>& rhs);
-  device_matrix<T> operator * (const device_matrix<T>& rhs) const;
+  device_matrix<T>& operator *= (device_matrix<T>& rhs);
+  device_matrix<T> operator * (device_matrix<T>& rhs);
 
   template <typename S>
   friend void swap(device_matrix<S>& lhs, device_matrix<S>& rhs);
@@ -107,16 +110,24 @@ public:
   // call copy constructor first, and swap with the temp variable
   device_matrix<T>& operator = (device_matrix<T> rhs);
 
+  // Operator transpose
+  device_matrix<T>& operator ~ ();
+
   void _init();
   void resize(size_t r, size_t c);
+  void reserve(size_t capacity);
   void print(FILE* fid = stdout) const;
 
   void fillwith(T val);
   size_t size() const { return _rows * _cols; }
   size_t getRows() const { return _rows; }
   size_t getCols() const { return _cols; }
+  bool isTransposed() const { return _transposed; }
   T* getData() const { return _data; }
   void save(const string& filename) const;
+  void status() const {
+    printf("\33\[33m[Info]\33[0m rows = %lu, cols = %lu, capacity = %lu\n", _rows, _cols, _capacity);
+  }
 
   static void cublas_gemm(
     cublasOperation_t transA, cublasOperation_t transB,
@@ -143,6 +154,8 @@ public:
       T beta,
       T *y, int incy);
 
+  static void cublas_iamax(int n, const T* x, int incx, int* result);
+
   static void cublas_nrm2(int n, const T *x, int incx, T *result);
 
   static void cublas_scal(int n, T alpha, T *x, int incx);
@@ -153,17 +166,22 @@ public:
       T *y, int incy);
 
 private:
+  bool _transposed;
 
   size_t _rows;
   size_t _cols;
+  size_t _capacity;
+
   T* _data;
 };
 
 template <typename T>
 void swap(device_matrix<T>& lhs, device_matrix<T>& rhs) {
   using std::swap;
+  swap(lhs._transposed, rhs._transposed);
   swap(lhs._rows, rhs._rows);
   swap(lhs._cols, rhs._cols);
+  swap(lhs._capacity, rhs._capacity);
   swap(lhs._data, rhs._data);
 }
 
@@ -175,36 +193,68 @@ T nrm2(const dmat& A) {
   return result;
 }
 
+/*template <typename T>
+vector<int> maxIdxPerRow(const dmat& A) {
+  vector<int> result(A.getRows());
+  for (int i=0; i<A.getRows(); ++i)
+    device_matrix<T>::cublas_iamax(A.getCols(), A.getData() + i, A.getRows(), &result[i]);
+
+  return result;
+}*/
+
 template <typename T>
 void gemm(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 0.0) {
   // Perform C = αA*B + βC, not transpose on A and B
   size_t m = A.getRows();
-  size_t n = B.getCols();
-  C.resize(m, n);
+  size_t n = A.getCols();
+  if (A.isTransposed())
+    std::swap(m, n);
 
-  size_t k = A.getCols();
+  size_t k = B.getRows();
+  size_t l = B.getCols();
+  if (B.isTransposed())
+    std::swap(k, l);
+
+  assert(n == k);
+
+  C.resize(m, l);
 
   int lda = A.getRows();
   int ldb = B.getRows();
   int ldc = C.getRows();
 
-  device_matrix<T>::cublas_gemm(CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, alpha, A.getData(), lda, B.getData(), ldb, beta, C.getData(), ldc);
+  cublasOperation_t opA = A.isTransposed() ? CUBLAS_OP_T : CUBLAS_OP_N;
+  cublasOperation_t opB = B.isTransposed() ? CUBLAS_OP_T : CUBLAS_OP_N;
+
+  device_matrix<T>::cublas_gemm(opA, opB, m, l, k, alpha, A.getData(), lda, B.getData(), ldb, beta, C.getData(), ldc);
 }
 
 template <typename T>
 void geam(const dmat& A, const dmat& B, dmat& C, T alpha = 1.0, T beta = 1.0) {
   // Perform C = αA + βB, not transpose on A and B
-  assert(A.getRows() == B.getRows() && A.getCols() == B.getCols());
   
   size_t m = A.getRows();
   size_t n = A.getCols();
+  if (A.isTransposed())
+    std::swap(m, n);
+
+  size_t k = B.getRows();
+  size_t l = B.getCols();
+  if (B.isTransposed())
+    std::swap(k, l);
+
+  assert( m == k && n == l );
+
   C.resize(m, n);
 
   int lda = A.getRows();
   int ldb = B.getRows();
   int ldc = C.getRows();
 
-  device_matrix<T>::cublas_geam(CUBLAS_OP_N, CUBLAS_OP_N, m, n, alpha, A.getData(), lda, beta, B.getData(), ldb, C.getData(), ldc);
+  cublasOperation_t opA = A.isTransposed() ? CUBLAS_OP_T : CUBLAS_OP_N;
+  cublasOperation_t opB = B.isTransposed() ? CUBLAS_OP_T : CUBLAS_OP_N;
+
+  device_matrix<T>::cublas_geam(opA, opB, m, n, alpha, A.getData(), lda, beta, B.getData(), ldb, C.getData(), ldc);
 }
 #undef dmat
 
@@ -216,7 +266,7 @@ device_matrix<T> operator + (U alpha, const device_matrix<T>& m) {
 
 template <typename T, typename U>
 device_matrix<T> operator - (U alpha, const device_matrix<T>& m) {
-  return m - (T) alpha;
+  return (m - (T) alpha) * -1.0;
 }
 
 template <typename T, typename U>

@@ -6,23 +6,49 @@
 // ===============================
 
 template <typename T>
-device_matrix<T>::device_matrix(): _rows(0), _cols(0), _data(NULL) { }
+device_matrix<T>::device_matrix():
+  _transposed(false),
+  _rows(0), _cols(0),
+  _capacity(_rows * _cols),
+  _data(NULL) { }
 
 template <typename T>
-device_matrix<T>::device_matrix(size_t r, size_t c): _rows(r), _cols(c), _data(NULL) {
+device_matrix<T>::device_matrix(size_t r, size_t c):
+  _transposed(false),
+  _rows(r), _cols(c),
+  _capacity(_rows*_cols),
+  _data(NULL) {
+
   _init();
   fillwith(0);
 }
 
 template <typename T>
-device_matrix<T>::device_matrix(const string& filename): _rows(0), _cols(0), _data(NULL) {
+device_matrix<T>::device_matrix(T* h_data, size_t r, size_t c):
+  _transposed(false),
+  _rows(r), _cols(c),
+  _capacity(_rows*_cols),
+  _data(NULL) {
 
-  const size_t MAX_BUFFER = 65536;
+  _init();
+  CCE(cudaMemcpy(_data, h_data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice));
+}
+
+template <typename T>
+device_matrix<T>::device_matrix(const string& filename):
+  _transposed(false),
+  _rows(0), _cols(0),
+  _capacity(_rows*_cols),
+  _data(NULL) {
+
+  const size_t MAX_BUFFER = 262144;
   char line[MAX_BUFFER];
 
   FILE* fid = fopen(filename.c_str(), "r");
   while (fgets(line, MAX_BUFFER, fid)) {
     _rows++;
+
+    assert(line[strlen(line) - 1] == '\n');
 
     if (_cols != 0)
       continue;
@@ -45,14 +71,25 @@ device_matrix<T>::device_matrix(const string& filename): _rows(0), _cols(0), _da
   fclose(fid);
 
   _init();
+
   CCE(cudaMemcpy(_data, data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice));
   delete [] data;
 }
 // Copy Constructor 
 template <typename T>
-device_matrix<T>::device_matrix(const device_matrix<T>& source): _rows(source._rows), _cols(source._cols), _data(NULL) {
+device_matrix<T>::device_matrix(const device_matrix<T>& source):
+  _transposed(false),
+  _rows(source._rows), _cols(source._cols),
+  _capacity(_rows * _cols),
+  _data(NULL) {
+
   _init();
-  CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice));
+  if (!source._transposed)
+    CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice));
+  else {
+    // TODO
+    // Transpose and copy at the same time (see Nvidia CUDA forum)
+  }
 }
 
 #ifdef HAVE_THRUST_DEVICE_VECTOR_H
@@ -87,15 +124,17 @@ device_matrix<T> device_matrix<T>::operator + (T val) const {
 }
 
 template <typename T>
-device_matrix<T>& device_matrix<T>::operator += (const device_matrix<T>& rhs) {
+device_matrix<T>& device_matrix<T>::operator += (device_matrix<T>& rhs) {
   *this = *this + rhs;
   return *this;
 }
 
 template <typename T>
-device_matrix<T> device_matrix<T>::operator + (const device_matrix<T>& rhs) const {
+device_matrix<T> device_matrix<T>::operator + (device_matrix<T>& rhs) {
   device_matrix<T> result(_rows, _cols);
   geam(*this, rhs, result, (T) 1.0, (T) 1.0);
+
+  _transposed = rhs._transposed = false;
   return result;
 }
 
@@ -114,15 +153,17 @@ device_matrix<T> device_matrix<T>::operator - (T val) const {
 }
 
 template <typename T>
-device_matrix<T>& device_matrix<T>::operator -= (const device_matrix<T>& rhs) {
+device_matrix<T>& device_matrix<T>::operator -= (device_matrix<T>& rhs) {
   *this = *this - rhs;
   return *this;
 }
 
 template <typename T>
-device_matrix<T> device_matrix<T>::operator - (const device_matrix<T>& rhs) const {
+device_matrix<T> device_matrix<T>::operator - (device_matrix<T>& rhs) {
   device_matrix<T> result(_rows, _cols);
   geam(*this, rhs, result, (T) 1.0, (T) -1.0);
+
+  _transposed = rhs._transposed = false;
   return result;
 }
 
@@ -152,15 +193,17 @@ device_matrix<T> device_matrix<T>::operator * (T alpha) const {
 
 // ===== Matrix-Matrix Multiplication =====
 template <typename T>
-device_matrix<T>& device_matrix<T>::operator *= (const device_matrix<T>& rhs) {
+device_matrix<T>& device_matrix<T>::operator *= (device_matrix<T>& rhs) {
   *this = *this * rhs;
   return *this;
 }
 
 template <typename T>
-device_matrix<T> device_matrix<T>::operator * (const device_matrix<T>& rhs) const {
+device_matrix<T> device_matrix<T>::operator * (device_matrix<T>& rhs) {
   device_matrix<T> result(_rows, rhs._cols);
   gemm(*this, rhs, result);
+  
+  _transposed = rhs._transposed = false;
   return result;
 }
 
@@ -172,20 +215,49 @@ device_matrix<T>& device_matrix<T>::operator = (device_matrix<T> rhs) {
   return *this;
 }
 
+// Operator transpose
+template <typename T>
+device_matrix<T>& device_matrix<T>::operator ~ () {
+  this->_transposed = true;
+  return *this;
+}
+
 template <typename T>
 void device_matrix<T>::_init() {
+  _capacity = _rows * _cols;
   CCE(cudaMalloc((void **)&_data, _rows * _cols * sizeof(T)));
 }
 
 template <typename T>
 void device_matrix<T>::resize(size_t r, size_t c) {
+  // printf("trying to resize from (%lu, %lu) => (%lu, %lu), with original capacity = %lu\n", _rows, _cols, r, c, _capacity);
   if (_rows == r && _cols == c)
     return;
 
   _rows = r;
   _cols = c;
+
+  if (r * c <= _capacity)
+    return;
+
+  CCE(cudaFree(_data));
   _init();
   fillwith(0);
+}
+
+template <typename T>
+void device_matrix<T>::reserve(size_t capacity) {
+  if (capacity <= _capacity)
+    return;
+
+  _capacity = capacity;
+
+  T* buffer;
+  CCE(cudaMalloc((void **)&buffer, _capacity * sizeof(T)));
+  CCE(cudaMemset(buffer, 0, _capacity * sizeof(T)));
+  CCE(cudaMemcpy(buffer, _data, sizeof(T) * size(), cudaMemcpyDeviceToDevice));
+  CCE(cudaFree(_data));
+  _data = buffer;
 }
 
 template <typename T>
@@ -196,7 +268,7 @@ void device_matrix<T>::print(FILE* fid) const {
 
   for (size_t i=0; i<_rows; ++i) {
     for (size_t j=0; j<_cols; ++j)
-      fprintf(fid, "%.7f ", data[j*_rows + i]);
+      fprintf(fid, "%.5f ", data[j*_rows + i]);
     fprintf(fid, "\n");
   }
 
@@ -209,6 +281,9 @@ void device_matrix<T>::print(FILE* fid) const {
 template <typename T>
 void device_matrix<T>::fillwith(T val) {
   cudaMemset(_data, 0, _rows * _cols * sizeof(T));
+
+  if (val != 0)
+    *this += val;
 }
 
 template <typename T>
@@ -288,6 +363,17 @@ void device_matrix<double>::cublas_gemv(
     double *y, int incy) {
   CCE(cublasDgemv(CUBLAS_HANDLE::getInstance(), trans, m, n, &alpha, A, lda, x, incx, &beta, y, incy));
 }
+
+template <>
+void device_matrix<float>::cublas_iamax(int n, const float *x, int incx, int *result) {
+  CCE(cublasIsamax(CUBLAS_HANDLE::getInstance(), n, x, incx, result));
+}
+
+template <>
+void device_matrix<double>::cublas_iamax(int n, const double *x, int incx, int *result) {
+  CCE(cublasIdamax(CUBLAS_HANDLE::getInstance(), n, x, incx, result));
+}
+
 
 template <>
 void device_matrix<float>::cublas_nrm2(int n, const float *x, int incx, float *result) {

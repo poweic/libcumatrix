@@ -1,8 +1,9 @@
 #include <iostream>
+#include <vector>
 #include <device_matrix.h>
 
 using namespace std;
-typedef device_matrix<double> mat;
+typedef device_matrix<float> mat;
 
 template <typename T>
 void randomInit(device_matrix<T>& m) {
@@ -14,6 +15,7 @@ void randomInit(device_matrix<T>& m) {
 }
 
 int main (int argc, char* argv[]) {
+
   mat A(16, 16), B(16, 16);
   randomInit(A);
   randomInit(B);
@@ -23,7 +25,8 @@ int main (int argc, char* argv[]) {
   // ============================
   A.print();
   B.print();
-  
+
+
   // To save matrix, you can pass a file descriptor (fid) to print()
   FILE* fid = fopen("A.mat", "w");
   if (fid != NULL)
@@ -32,6 +35,18 @@ int main (int argc, char* argv[]) {
 
   // Or you can just call A.save();  It's more simple !
   A.save("A.mat");
+
+  // ======================================
+  // ===== Construct from CPU pointer =====
+  // ======================================
+
+  int M = 12, N = 17;
+  float* x = new float[M * N];
+
+  for (int i=0; i<M*N; ++i)
+    x[i] = i;
+
+  mat(x, M, N).print();
 
   // ===============================
   // ===== Matrix - Scalar (1) =====
@@ -64,6 +79,38 @@ int main (int argc, char* argv[]) {
   printf("A-B:\n"); (A-B).print();
   printf("A*B:\n"); (A*B).print();
   // printf("A/B:\n"); (A/B).print(); [NOT IMPLEMENTED YET]
+
+  mat C(12, 8), D(8, 12);
+  randomInit(C);
+  randomInit(D);
+  C.print();
+  D.print();
+
+  printf("C * D: \n");
+  (C*D).print();
+
+  printf("C + transpose(D):\n"); (C + ~D).print();
+  printf("transpose(C) + D:\n"); (~C + D).print();
+  printf("transpose(C) * transpose(D):\n"); (~C * ~D).print();
+
+  mat E(10, 10);
+  mat::cublas_gemm(CUBLAS_OP_N, CUBLAS_OP_N, 10, 10, 8, 1.0, C.getData(), C.getRows(), D.getData(), D.getRows(), 0, E.getData(), E.getRows());
+
+  printf("E = C(1:10, :) * D(:, 1:10)\n");
+  E.print();
+
+  mat E2(12, 11);
+  mat::cublas_geam(CUBLAS_OP_N, CUBLAS_OP_N, 10, 10, 1.0, E.getData(), 10, 1.0, E2.getData(), E2.getRows(), E2.getData(), E2.getRows());
+  printf("E2: \n");
+  E2.print();
+
+  E2.resize(12, 3);
+  printf("E2.resize(5, 3): \n");
+  E2.print();
+
+  E2.fillwith(123);
+  printf("E2.fillwith(5): \n");
+  E2.print();
 
   return 0;
 }
