@@ -268,7 +268,7 @@ void device_matrix<T>::print(FILE* fid) const {
 
   for (size_t i=0; i<_rows; ++i) {
     for (size_t j=0; j<_cols; ++j)
-      fprintf(fid, "%g ", data[j*_rows + i]);
+      fprintf(fid, "%.5f ", data[j*_rows + i]);
     fprintf(fid, "\n");
   }
 

@@ -58,6 +58,18 @@ namespace ext {
   }
 
   template <typename T>
+  void rand(device_matrix<T>& m) {
+    T* data = new T[m.size()];
+
+    for (size_t i=0; i<m.size(); ++i)
+      data[i] = rand01<T>();
+
+    CCE(cudaMemcpy(m.getData(), data, sizeof(T) * m.size(), cudaMemcpyHostToDevice));
+    delete [] data;
+  }
+
+
+  template <typename T>
   void randn(device_matrix<T>& m, float mean = 0.0, float variance = 1.0) {
     T* data = new T[m.size()];
 
