@@ -100,6 +100,7 @@ public:
 
   // Copy Constructor 
   device_matrix(const device_matrix<T>& source);
+  device_matrix(const Transposed& source);
 
 #ifdef HAVE_THRUST_DEVICE_VECTOR_H
   // Conversion operator
