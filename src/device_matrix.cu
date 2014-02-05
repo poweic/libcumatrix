@@ -4,6 +4,15 @@
 // ===============================
 // ===== class device_matrix =====
 // ===============================
+template <typename T>
+__global__ void naiveMatrixTranspose(T *odata, const T *idata, const int rows, const int cols) {
+
+  int x = blockIdx.x * blockDim.x + threadIdx.x;
+  int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+  if (x < cols && y < rows)
+    odata[x*rows + y] = idata[y*cols+ x];
+}
 
 template <typename T>
 device_matrix<T>::device_matrix():
@@ -71,6 +80,7 @@ device_matrix<T>::device_matrix(const string& filename):
   CCE(cudaMemcpy(_data, data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice));
   delete [] data;
 }
+
 // Copy Constructor 
 template <typename T>
 device_matrix<T>::device_matrix(const device_matrix<T>& source):
@@ -80,6 +90,22 @@ device_matrix<T>::device_matrix(const device_matrix<T>& source):
 
   _init();
   CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice));
+}
+
+template <typename T>
+device_matrix<T>::device_matrix(const Transposed& source):
+  _rows(source._m._cols), _cols(source._m._rows),
+  _capacity(_rows * _cols),
+  _data(NULL) {
+
+  _init();
+  
+  dim3 grid;
+  grid.x = (unsigned int) ceil((float) _cols / 32);
+  grid.y = (unsigned int) ceil((float) _rows / 32);
+  dim3 threads(32, 32);
+
+  naiveMatrixTranspose<<<grid, threads>>>(_data, source._m._data, _rows, _cols);
 }
 
 #ifdef HAVE_THRUST_DEVICE_VECTOR_H
