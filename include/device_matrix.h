@@ -119,20 +119,20 @@ public:
   device_matrix<T> operator + (T val) const;
   
   device_matrix<T>& operator += (const device_matrix<T>& rhs);
-  device_matrix<T> operator + (const device_matrix<T>& rhs);
+  device_matrix<T> operator + (const device_matrix<T>& rhs) const;
 
   device_matrix<T>& operator += (const Transposed& rhs);
-  device_matrix<T> operator + (const Transposed& rhs);
+  device_matrix<T> operator + (const Transposed& rhs) const;
 
   // ===== Substraction =====
   device_matrix<T>& operator -= (T val);
   device_matrix<T> operator - (T val) const;
   
   device_matrix<T>& operator -= (const device_matrix<T>& rhs);
-  device_matrix<T> operator - (const device_matrix<T>& rhs);
+  device_matrix<T> operator - (const device_matrix<T>& rhs) const;
 
   device_matrix<T>& operator -= (const Transposed& rhs);
-  device_matrix<T> operator - (const Transposed& rhs);
+  device_matrix<T> operator - (const Transposed& rhs) const;
 
   // ===== Division =====
   device_matrix<T>& operator /= (T alpha);
@@ -144,10 +144,10 @@ public:
 
   // ===== Matrix-Matrix Multiplication =====
   device_matrix<T>& operator *= (const device_matrix<T>& rhs);
-  device_matrix<T> operator * (const device_matrix<T>& rhs);
+  device_matrix<T> operator * (const device_matrix<T>& rhs) const;
 
   device_matrix<T>& operator *= (const Transposed& rhs);
-  device_matrix<T> operator * (const Transposed& rhs);
+  device_matrix<T> operator * (const Transposed& rhs) const;
 
   template <typename S>
   friend void swap(device_matrix<S>& lhs, device_matrix<S>& rhs);
