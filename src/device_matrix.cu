@@ -320,9 +320,6 @@ void device_matrix<T>::print(FILE* fid) const {
     fprintf(fid, "\n");
   }
 
-  if (fid == stdout)
-    fprintf(fid, "\n");
-
   delete [] data;
 }
 
