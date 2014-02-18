@@ -22,12 +22,12 @@ namespace ext {
   // ========================
   template <typename T>
   void save(const std::vector<T>& v, std::string filename) {
-    ofstream fs(filename.c_str());
+    std::ofstream fs(filename.c_str());
 
     fs.precision(6);
     fs << std::scientific;
     for (size_t i=0; i<v.size(); ++i)
-      fs << v[i] << endl;
+      fs << v[i] << std::endl;
 
     fs.close();
   }
@@ -39,7 +39,7 @@ namespace ext {
   void load(std::vector<T>& v, std::string filename) {
     v.clear();
 
-    ifstream fs(filename.c_str());
+    std::ifstream fs(filename.c_str());
 
     T t;
     while (fs >> t) 
