@@ -266,7 +266,7 @@ device_matrix<T>& device_matrix<T>::operator = (device_matrix<T> rhs) {
 
 // Operator transpose
 template <typename T>
-device_matrix<T>::Transposed device_matrix<T>::operator ~ () {
+device_matrix<T>::Transposed device_matrix<T>::operator ~ () const {
   return device_matrix<T>::Transposed(*this);
 }
 

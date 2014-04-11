@@ -158,7 +158,7 @@ public:
 
   // Operator transpose
   // device_matrix<T>& operator ~ ();
-  Transposed operator ~ ();
+  Transposed operator ~ () const;
 
   void _init();
   void resize(size_t r, size_t c);
