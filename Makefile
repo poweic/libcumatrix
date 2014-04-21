@@ -7,7 +7,7 @@ CUDA_ROOT=/usr/local/cuda
 
 EXECUTABLES=
 EXAMPLE_PROGRAM=benchmark example1 example2
-OBJ=obj/device_matrix.o
+OBJ=obj/device_matrix.o obj/cuda_memory_manager.o
  
 .PHONY: debug all o3 ctags
 all: libs $(EXECUTABLES) $(EXAMPLE_PROGRAM) ctags
@@ -20,7 +20,8 @@ debug: all
 libs: $(OBJ) lib/libcumatrix.a
 
 lib/libcumatrix.a: $(OBJ)
-	ar rcs $@ $<
+	rm -f $@
+	ar rcs $@ $^
 	ranlib $@
 
 vpath %.h include/
@@ -47,8 +48,8 @@ example2: $(OBJ) example2.cu
 # +==============================+
 # +===== Other Phony Target =====+
 # +==============================+
-obj/%.o: %.cpp
-	$(CXX) $(CPPFLAGS) -o $@ -c $<
+obj/%.o: %.cpp include/%.h
+	$(CXX) $(CPPFLAGS) $(CUDA_INCLUDE) -o $@ -c $<
 
 obj/%.o: %.cu
 	$(NVCC) $(NVCCFLAGS) $(CFLAGS) $(CUDA_INCLUDE) -o $@ -c $<

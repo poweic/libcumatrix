@@ -100,7 +100,7 @@ namespace ext {
     T sz=0.0,v1,v2,sigma,ans;
     T seed1,seed2;
     sigma=sqrt(var);
-    seed1=rand()+clock()*123;
+    seed1=rand() +clock()*123;
     v1=unif<T>(seed1);
 
     do {
@@ -245,7 +245,7 @@ namespace ext {
   namespace randomgenerator {
     inline time_t srander() {
       time_t t = time(NULL);
-      srand(t);
+      srand(/*t*/0);
       return t;
     }
 

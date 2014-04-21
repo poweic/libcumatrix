@@ -4,12 +4,15 @@
 #include <cassert>
 #include <string>
 #include <iostream>
+#include <vector>
 using namespace std;
 
 /* Includes, cuda */
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
 #include <helper_cuda.h>
+
+#include <cuda_memory_manager.h>
 
 #define CCE(x) checkCudaErrors(x)
 
@@ -91,6 +94,8 @@ public:
   device_matrix();
 
   device_matrix(size_t r, size_t c);
+
+  device_matrix(size_t r, size_t c, T value);
 
   // Copy data from host pointer (in column-major)
   device_matrix(T* h_data, size_t r, size_t c);
@@ -211,6 +216,11 @@ public:
       int n, T alpha,
       const T *x, int incx,
       T *y, int incy);
+
+  static void setCudaStream(cudaStream_t& streamId);
+  static cudaStream_t _cuda_stream;
+
+  static CudaMemManager<T> _mem_manager;
 
 private:
   size_t _rows;
