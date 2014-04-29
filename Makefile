@@ -4,7 +4,7 @@ CFLAGS=
 NVCC=nvcc -arch=sm_21 -w
 
 CUDA_ROOT=/usr/local/cuda
-BOOST_ROOT=/usr/local/boost/
+#BOOST_ROOT=/usr/local/boost/
 
 EXECUTABLES=
 EXAMPLE_PROGRAM=benchmark example1 example2
@@ -30,8 +30,9 @@ vpath %.cpp src/
 vpath %.cu src/
 
 INCLUDE= -I include/\
-	 -I ../math_ext/\
-	 -I $(BOOST_ROOT)
+	 -I ../math_ext/
+
+#-I $(BOOST_ROOT)
 
 LIBRARY= -lcuda -lcublas -lcudart
 LIBRARY_PATH=-L$(CUDA_ROOT)/lib64/
@@ -39,7 +40,7 @@ CUDA_INCLUDE=$(INCLUDE) \
 	     -isystem $(CUDA_ROOT)/samples/common/inc/ \
 	     -isystem $(CUDA_ROOT)/include
 
-CPPFLAGS= $(CFLAGS) $(INCLUDE)
+CPPFLAGS= -std=c++0x $(CFLAGS) $(INCLUDE)
 
 benchmark: $(OBJ) benchmark.cpp
 	$(CXX) $(CPPFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(LIBRARY_PATH) $(LIBRARY)

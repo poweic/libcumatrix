@@ -13,80 +13,99 @@ using std::endl;
 #include <queue>
 #include <map>
 
-#include "boost/unordered_map.hpp"
+// #include "boost/unordered_map.hpp"
+
+template <typename T>
+struct MemList {
+  MemList(): hits(0), hit_rate(0) {}
+
+  bool empty() const {
+    return ptrs.empty();
+  }
+
+  size_t size() const {
+    return ptrs.size();
+  }
+
+  T* back() const {
+    return ptrs.back();
+  }
+  
+  void pop_back() {
+    ptrs.pop_back();
+  }
+
+  void push_back(T* ptr) {
+    ptrs.push_back(ptr);
+  }
+
+  void hit() {
+    ++hits;
+    ++hit_rate;
+  }
+
+  std::vector<T*> ptrs;
+  size_t hits;
+  size_t hit_rate;
+};
+
 
 template <typename T>
 struct MemPool {
-  typedef typename boost::unordered_map<size_t, std::vector<T*> > type;
-  // typedef typename std::map<size_t, std::vector<T*> > type;
+  // typedef typename boost::unordered_map<size_t, MemList<T> > type;
+  typedef typename std::map<size_t, MemList<T> > type;
 };
 
 template <typename T>
 class CudaMemManager {
 public:
-  CudaMemManager(): _total_byte_allocated(0) { /* Nothing to do */ }
-  ~CudaMemManager() {}
 
-  void free(T* data);
-  T* malloc(size_t N);
+  static T* malloc(size_t N);
+
+  static void free(T* data);
+
+  static void gc();
 
 private:
 
-  void push(size_t size, T* ptr) {
-
-    if (size == 0)
-      return;
-
-    if (_pool.count(size) == 0)
-      _pool[size] = std::vector<T*>();
-
-    std::vector<T*> &x = _pool[size];
-    
-    x.push_back(ptr);
+  static CudaMemManager& getInstance() {
+    static CudaMemManager memoryManager;
+    return memoryManager;
   }
 
-  bool hasMore(size_t size) {
-    return _pool.count(size) > 0 && !_pool[size].empty();
+  CudaMemManager(): _total_byte_allocated(0) { /* Nothing to do */ }
+
+  ~CudaMemManager() {
+#ifdef DEBUG
+    showCacheHits();
+#endif
   }
 
-  T* get(size_t size) {
-    assert(_pool[size].size() > 0);
+  void push(size_t size, T* ptr);
 
-    T* ptr = _pool[size].back();
-    _pool[size].pop_back();
-    return ptr;
-  }
+  bool hasMore(size_t size);
 
-  void gc() { this->garbage_collection(); }
+  T* get(size_t size);
 
-  void garbage_collection() {
-    // printf("\33[33m[Info]\33[0m Total %lu bytes allocated.\n" , _total_byte_allocated);
+  void garbage_collection();
 
-    // TODO do something to free
-    //
-    // TODO count how much freed, update _total_byte_allocated
-    // 
-    // TODO update _byte_allocated
-  }
+  size_t size() const;
 
-  size_t size() const {
-    return _total_byte_allocated;
-  }
+  static void setCacheSize(size_t cache_size);
 
-  void free_all();
+  static size_t CACHE_SIZE;
 
-  static void setCacheSize(size_t cache_size) {
-    _cache_size = cache_size;
-  }
-
-  static size_t _cache_size;
+  std::vector<size_t> getKeys(const typename MemPool<T>::type &pool);
+  std::vector<size_t> sort_memlist_by_hits();
+  std::vector<size_t> sort_memlist_by_hit_rate();
   
+  void showCacheHits();
+  
+  // Data member
   typename MemPool<T>::type _pool;
-
   size_t _total_byte_allocated;
   std::map<T*, size_t> _byte_allocated;
-  std::queue<T*> _data_to_free;
-
+  // std::queue<T*> _data_to_free;
 };
 
 #endif // __CUDA_MEMORY_MANAGER_H_
