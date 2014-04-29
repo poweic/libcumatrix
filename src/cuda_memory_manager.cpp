@@ -3,7 +3,7 @@
 template <typename T>
 CudaMemManager<T>::~CudaMemManager() {
 
-  while (!_data_to_free.empty()) {
+  /*while (!_data_to_free.empty()) {
     T* d = _data_to_free.front();
 
     cudaError_t e = cudaFree(d);
@@ -11,7 +11,7 @@ CudaMemManager<T>::~CudaMemManager() {
       checkCudaErrors(e);
 
     _data_to_free.pop();
-  }
+  }*/
 }
 
 template <typename T>
@@ -36,6 +36,8 @@ T* CudaMemManager<T>::malloc(size_t N) {
   CCE(cudaMalloc((void **) &data, N * sizeof(T)));
   _byte_allocated[data] = N;
   _total_byte_allocated += N;
+
+  CCE(cudaDeviceSynchronize());
   return data;
 }
 

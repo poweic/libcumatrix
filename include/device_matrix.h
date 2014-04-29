@@ -167,6 +167,7 @@ public:
 
   void _init();
   void resize(size_t r, size_t c);
+  void resize(size_t r, size_t c, T value);
   void reserve(size_t capacity);
   void print(FILE* fid = stdout) const;
 
@@ -178,7 +179,7 @@ public:
   void save(const string& filename) const;
 
   void status() const {
-    printf("\33\[33m[Info]\33[0m rows = %lu, cols = %lu, capacity = %lu\n", _rows, _cols, _capacity);
+    printf("\33[33m[Info]\33[0m rows = %lu, cols = %lu, capacity = %lu\n", _rows, _cols, _capacity);
   }
 
   static void cublas_gemm(

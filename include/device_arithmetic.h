@@ -16,7 +16,7 @@ template <typename T>
 dmat<T> operator * (const dvec<T>& col_vector, const dvec<T>& row_vector) {
   size_t m = col_vector.size();
   size_t n = row_vector.size();
-  dmat<T> result(m, n);
+  dmat<T> result(m, n, 0);
   size_t k = 1;
 
   // Treat device_vector as an 1 by N matrix
@@ -45,7 +45,7 @@ dvec<T> operator & (const dvec<T>& x, const dvec<T>& y) {
 template <typename T>
 dmat<T> operator * (const dvec<T>& v, const dmat<T>& A) {
   assert(v.size() == A.getRows());
-  device_matrix<T> m(1, A.getCols());
+  device_matrix<T> m(1, A.getCols(), 0);
 
   // u = v*A = trans( trans(A) * trans(v) )
   // And there's nothing to do when a vector is transposed
@@ -63,7 +63,7 @@ template <typename T>
 dmat<T> operator * (const dmat<T>& A, const dvec<T>& v) {
   assert(A.getCols() == v.size());
 
-  device_matrix<T> m(A.getRows(), 1);
+  device_matrix<T> m(A.getRows(), 1, 0);
 
   // cublasOperation_t op = A.isTransposed() ? CUBLAS_OP_T : CUBLAS_OP_N;
   cublasOperation_t op = CUBLAS_OP_N;

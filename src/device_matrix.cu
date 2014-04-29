@@ -28,12 +28,11 @@ __global__ void naiveMatrixTranspose(T *odata, const T *idata, const int rows, c
   if (x < cols && y < rows)
     odata[x*rows + y] = idata[y*cols+ x];
 }
-
-template <typename T>
-device_matrix<T>::device_matrix():
+template <typename T> device_matrix<T>::device_matrix():
   _rows(0), _cols(0),
   _capacity(_rows * _cols),
-  _data(NULL) { }
+  _data(NULL) { 
+}
 
 template <typename T>
 device_matrix<T>::device_matrix(size_t r, size_t c):
@@ -42,6 +41,8 @@ device_matrix<T>::device_matrix(size_t r, size_t c):
   _data(NULL) {
 
   _init();
+  // Be careful to comment the following line.
+  // If the user think the default value are 0, it may give rise to creepy NaN.
   // fillwith(0);
 }
 
@@ -63,7 +64,6 @@ device_matrix<T>::device_matrix(T* h_data, size_t r, size_t c):
 
   _init();
   CCE(cudaMemcpy(_data, h_data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice));
-  // CCE(cudaMemcpyAsync(_data, h_data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice, _cuda_stream));
 }
 
 template <typename T>
@@ -104,7 +104,6 @@ device_matrix<T>::device_matrix(const string& filename):
   _init();
 
   CCE(cudaMemcpy(_data, data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice));
-  // CCE(cudaMemcpyAsync(_data, data, sizeof(T) * _rows * _cols, cudaMemcpyHostToDevice, _cuda_stream));
   delete [] data;
 }
 
@@ -117,7 +116,6 @@ device_matrix<T>::device_matrix(const device_matrix<T>& source):
 
   _init();
   CCE(cudaMemcpy(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice));
-  // CCE(cudaMemcpyAsync(_data, source._data, sizeof(T) * _rows * _cols, cudaMemcpyDeviceToDevice, _cuda_stream));
 }
 
 template <typename T>
@@ -151,7 +149,6 @@ CudaMemManager<T> device_matrix<T>::_mem_manager;
 template <typename T>
 device_matrix<T>::~device_matrix() {
   _mem_manager.free(_data);
-  //CCE(cudaFree(_data));
 }
 
 // ===========================
@@ -176,7 +173,6 @@ device_matrix<T>& device_matrix<T>::operator += (const device_matrix<T>& rhs) {
   thrust::device_ptr<T> ptr1(_data);
   thrust::device_ptr<T> ptr2(rhs._data);
   thrust::transform(ptr1, ptr1 + _rows * _cols, ptr2, ptr1, thrust::plus<T>());
-  // *this = *this + rhs;
   return *this;
 }
 
@@ -189,7 +185,6 @@ device_matrix<T> device_matrix<T>::operator + (const device_matrix<T>& rhs) cons
   thrust::device_ptr<T> ptr2(rhs._data);
   thrust::transform(ptr1, ptr1 + _rows * _cols, ptr2, ptr0, thrust::plus<T>());
 
-  // geam(*this, rhs, result, (T) 1.0, (T) 1.0);
   return result;
 }
 
@@ -201,7 +196,7 @@ device_matrix<T>& device_matrix<T>::operator += (const typename device_matrix<T>
 
 template <typename T>
 device_matrix<T> device_matrix<T>::operator + (const typename device_matrix<T>::Transposed& rhs) const {
-  device_matrix<T> result(_rows, _cols);
+  device_matrix<T> result(_rows, _cols, 0);
   geam(*this, rhs._m, result, (T) 1.0, (T) 1.0, false, true);
   return result;
 }
@@ -222,14 +217,21 @@ device_matrix<T> device_matrix<T>::operator - (T val) const {
 
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator -= (const device_matrix<T>& rhs) {
-  *this = *this - rhs;
+  thrust::device_ptr<T> ptr1(_data);
+  thrust::device_ptr<T> ptr2(rhs._data);
+  thrust::transform(ptr1, ptr1 + _rows * _cols, ptr2, ptr1, thrust::minus<T>());
   return *this;
 }
 
 template <typename T>
 device_matrix<T> device_matrix<T>::operator - (const device_matrix<T>& rhs) const {
   device_matrix<T> result(_rows, _cols);
-  geam(*this, rhs, result, (T) 1.0, (T) -1.0);
+
+  thrust::device_ptr<T> ptr0(result._data);
+  thrust::device_ptr<T> ptr1(_data);
+  thrust::device_ptr<T> ptr2(rhs._data);
+  thrust::transform(ptr1, ptr1 + _rows * _cols, ptr2, ptr0, thrust::minus<T>());
+
   return result;
 }
 
@@ -241,7 +243,7 @@ device_matrix<T>& device_matrix<T>::operator -= (const typename device_matrix<T>
 
 template <typename T>
 device_matrix<T> device_matrix<T>::operator - (const typename device_matrix<T>::Transposed& rhs) const {
-  device_matrix<T> result(_rows, _cols);
+  device_matrix<T> result(_rows, _cols, 0);
   geam(*this, rhs._m, result, (T) 1.0, (T) -1.0, false, true);
   return result;
 }
@@ -279,7 +281,7 @@ device_matrix<T>& device_matrix<T>::operator *= (const device_matrix<T>& rhs) {
 
 template <typename T>
 device_matrix<T> device_matrix<T>::operator * (const device_matrix<T>& rhs) const {
-  device_matrix<T> result(_rows, rhs._cols);
+  device_matrix<T> result(_rows, rhs._cols, 0);
   gemm(*this, rhs, result, (T) 1.0, (T) 0.0);
   return result;
 }
@@ -292,7 +294,7 @@ device_matrix<T>& device_matrix<T>::operator *= (const Transposed& rhs) {
 
 template <typename T>
 device_matrix<T> device_matrix<T>::operator * (const Transposed& rhs) const {
-  device_matrix<T> result(_rows, rhs._m._rows);
+  device_matrix<T> result(_rows, rhs._m._rows, 0);
   gemm(*this, rhs._m, result, (T) 1.0, (T) 0.0, false, true);
   return result;
 }
@@ -301,7 +303,6 @@ device_matrix<T> device_matrix<T>::operator * (const Transposed& rhs) const {
 // call copy constructor first, and swap with the temp variable
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator = (device_matrix<T> rhs) {
-  // cout << "COPY ASSIGNMENT" << endl;
   swap(*this, rhs);
   return *this;
 }
@@ -316,7 +317,6 @@ template <typename T>
 void device_matrix<T>::_init() {
   _capacity = _rows * _cols;
   _data = _mem_manager.malloc(_rows * _cols);
-  // CCE(cudaMalloc((void **)&_data, _rows * _cols * sizeof(T)));
 }
 
 template <typename T>
@@ -331,10 +331,14 @@ void device_matrix<T>::resize(size_t r, size_t c) {
   if (r * c <= _capacity)
     return;
 
-  // CCE(cudaFree(_data));
   _mem_manager.free(_data);
   _init();
-  // fillwith(0);
+}
+
+template <typename T>
+void device_matrix<T>::resize(size_t r, size_t c, T value) {
+  this->resize(r, c);
+  fillwith(value);
 }
 
 template <typename T>
@@ -345,11 +349,8 @@ void device_matrix<T>::reserve(size_t capacity) {
   _capacity = capacity;
 
   T* buffer = _mem_manager.malloc(_capacity);
-  // CCE(cudaMalloc((void **)&buffer, _capacity * sizeof(T)));
   CCE(cudaMemcpy(buffer, _data, sizeof(T) * size(), cudaMemcpyDeviceToDevice));
-  // CCE(cudaMemcpyAsync(buffer, _data, sizeof(T) * size(), cudaMemcpyDeviceToDevice, _cuda_stream));
   _mem_manager.free(_data);
-  // CCE(cudaFree(_data));
   _data = buffer;
 }
 
@@ -358,11 +359,10 @@ void device_matrix<T>::print(FILE* fid) const {
 
   T* data = new T[size()];
   CCE(cudaMemcpy(data, _data, sizeof(T) * size(), cudaMemcpyDeviceToHost));
-  // CCE(cudaMemcpyAsync(data, _data, sizeof(T) * size(), cudaMemcpyDeviceToHost, _cuda_stream));
 
   for (size_t i=0; i<_rows; ++i) {
     for (size_t j=0; j<_cols; ++j)
-      fprintf(fid, "%.7e ", data[j*_rows + i]);
+      fprintf(fid, "%.4e ", data[j*_rows + i]);
     fprintf(fid, "\n");
   }
 
