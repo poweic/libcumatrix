@@ -80,8 +80,8 @@ size_t CudaMemManager<T>::size() const {
 }
 
 template <typename T>
-void CudaMemManager<T>::setCacheSize(size_t cache_size) {
-  CACHE_SIZE = cache_size;
+void CudaMemManager<T>::setCacheSize(size_t cache_size_in_MB) {
+  CACHE_SIZE = cache_size_in_MB * 1024 * 1024;
 }
 
 template <typename T>

@@ -65,6 +65,10 @@ public:
   static void free(T* data);
 
   static void gc();
+  
+  static void showCacheHits();
+
+  static void setCacheSize(size_t cache_size);
 
 private:
 
@@ -75,11 +79,7 @@ private:
 
   CudaMemManager(): _total_byte_allocated(0) { /* Nothing to do */ }
 
-  ~CudaMemManager() {
-#ifdef DEBUG
-    showCacheHits();
-#endif
-  }
+  ~CudaMemManager() {}
 
   void push(size_t size, T* ptr);
 
@@ -91,21 +91,16 @@ private:
 
   size_t size() const;
 
-  static void setCacheSize(size_t cache_size);
-
   static size_t CACHE_SIZE;
 
-  std::vector<size_t> getKeys(const typename MemPool<T>::type &pool);
-  std::vector<size_t> sort_memlist_by_hits();
-  std::vector<size_t> sort_memlist_by_hit_rate();
-  
-  void showCacheHits();
+  static std::vector<size_t> getKeys(const typename MemPool<T>::type &pool);
+  static std::vector<size_t> sort_memlist_by_hits();
+  static std::vector<size_t> sort_memlist_by_hit_rate();
   
   // Data member
   typename MemPool<T>::type _pool;
   size_t _total_byte_allocated;
   std::map<T*, size_t> _byte_allocated;
-  // std::queue<T*> _data_to_free;
 };
 
 #endif // __CUDA_MEMORY_MANAGER_H_
