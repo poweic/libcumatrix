@@ -1,44 +1,40 @@
 #include <cuda_memory_manager.h>
 
 template <typename T>
-CudaMemManager<T>::~CudaMemManager() {
-
-  /*while (!_data_to_free.empty()) {
-    T* d = _data_to_free.front();
-
-    cudaError_t e = cudaFree(d);
-    if (e != cudaErrorCudartUnloading)
-      checkCudaErrors(e);
-
-    _data_to_free.pop();
-  }*/
-}
+size_t CudaMemManager<T>::_cache_size = 65536;
 
 template <typename T>
-void CudaMemManager<T>::free(T* data) {
-  static size_t queued_bytes = 0;
+void CudaMemManager<T>::free(T* ptr) {
   // Un-comment the following line to see how much speed can gain from this.
-  // CCE(cudaFree(data)); return;
-  _data_to_free.push(data);
-
-  size_t byte = _byte_allocated[data];
-  queued_bytes += byte;
-
-  if (queued_bytes >= MEM_BLOCK) {
-    this->free_all();
-    queued_bytes = 0;
-  }
+  // CCE(cudaFree(ptr)); return;
+  
+  size_t byte = _byte_allocated[ptr];
+  _byte_allocated.erase(ptr);
+  this->push(byte, ptr);
+  this->gc();
 }
 
 template <typename T>
 T* CudaMemManager<T>::malloc(size_t N) {
-  T* data;
-  CCE(cudaMalloc((void **) &data, N * sizeof(T)));
-  _byte_allocated[data] = N;
-  _total_byte_allocated += N;
+  T* ptr;
 
-  CCE(cudaDeviceSynchronize());
-  return data;
+  if (this->hasMore(N)) {
+    // printf("\33[33m[Info]\33[0m Get %lu bytes memory from recycle pool\n", N);
+    ptr = this->get(N);
+  }
+  else {
+    // printf("\33[33m[Info]\33[0m Allocating %lu bytes memory.\n" , N);
+
+    CCE(cudaMalloc((void **) &ptr, N * sizeof(T)));
+    CCE(cudaDeviceSynchronize());
+
+    _total_byte_allocated += N;
+  }
+
+  // Keep track of the memory size hold by each pointer.
+  _byte_allocated[ptr] = N;
+
+  return ptr;
 }
 
 template <typename T>
