@@ -14,7 +14,35 @@ void randomInit(device_matrix<T>& m) {
   delete [] h_data;
 }
 
+void playground() {
+  mat A(16, 16);
+  mat B(16, 16);
+  randomInit(A);
+  randomInit(B);
+
+  printf("\33[34m================= Named Return Value optimization  ================= \33[0m\n");
+  printf("mat C = A * B;\n");
+  mat C = A * B;
+  printf("\33[34m==================================================================== \33[0m\n");
+  
+  printf("\33[34m==================================================================== \33[0m\n");
+  printf("C = B * A;\n");
+  C = B * A;
+  printf("\33[34m==================================================================== \33[0m\n");
+
+  printf("\33[34m==================================================================== \33[0m\n");
+  printf("mat D;\n");
+  mat D;
+
+  printf("D = C;\n");
+  D = C;
+  printf("\33[34m==================================================================== \33[0m\n");
+}
+
 int main (int argc, char* argv[]) {
+  for (size_t i=0; i<10; ++i)
+    playground();
+  return 0;
 
   mat A(16, 16), B(16, 16);
   randomInit(A);
@@ -122,7 +150,7 @@ int main (int argc, char* argv[]) {
   E2.print();
 
   E2.fillwith(123);
-  printf("E2.fillwith(5): \n");
+  printf("E2.fillwith(123): \n");
   E2.print();
 
   return 0;
