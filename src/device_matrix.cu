@@ -144,11 +144,8 @@ device_matrix<T>::operator thrust::device_vector<T>() const {
 #endif
 
 template <typename T>
-CudaMemManager<T> device_matrix<T>::_mem_manager;
-
-template <typename T>
 device_matrix<T>::~device_matrix() {
-  _mem_manager.free(_data);
+  CudaMemManager<T>::free(_data);
 }
 
 // ===========================
@@ -316,7 +313,7 @@ device_matrix<T>::Transposed device_matrix<T>::operator ~ () const {
 template <typename T>
 void device_matrix<T>::_init() {
   _capacity = _rows * _cols;
-  _data = _mem_manager.malloc(_rows * _cols);
+  _data = CudaMemManager<T>::malloc(_rows * _cols);
 }
 
 template <typename T>
@@ -331,7 +328,7 @@ void device_matrix<T>::resize(size_t r, size_t c) {
   if (r * c <= _capacity)
     return;
 
-  _mem_manager.free(_data);
+  CudaMemManager<T>::free(_data);
   _init();
 }
 
@@ -348,9 +345,9 @@ void device_matrix<T>::reserve(size_t capacity) {
 
   _capacity = capacity;
 
-  T* buffer = _mem_manager.malloc(_capacity);
+  T* buffer = CudaMemManager<T>::malloc(_capacity);
   CCE(cudaMemcpy(buffer, _data, sizeof(T) * size(), cudaMemcpyDeviceToDevice));
-  _mem_manager.free(_data);
+  CudaMemManager<T>::free(_data);
   _data = buffer;
 }
 

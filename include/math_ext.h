@@ -100,11 +100,11 @@ namespace ext {
     T sz=0.0,v1,v2,sigma,ans;
     T seed1,seed2;
     sigma=sqrt(var);
-    seed1=rand() +clock()*123;
+    seed1=rand() /*+ clock()*123*/;
     v1=unif<T>(seed1);
 
     do {
-      seed2=fabs(clock()*1236*var+rand()-seed1);
+      seed2=fabs(/*clock()*1236*var+*/ rand()-seed1);
       v2=unif<T>(seed2);
     } while (v2 == 0);
 

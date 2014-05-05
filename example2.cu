@@ -13,9 +13,8 @@
 using namespace ext;
 using namespace std;
 
-typedef double real;
-typedef device_matrix<real> mat;
-typedef thrust::device_vector<real> vec;
+typedef device_matrix<float> mat;
+typedef thrust::device_vector<float> vec;
 
 void randomInit(vec& v);
 void randomInit(mat& m);
@@ -37,8 +36,8 @@ int main (int argc, char* argv[]) {
   // ==========================================================
   // ===== Converion between std::vector & thrust::vector =====
   // ==========================================================
-  std::vector<real> h_x = ext::toStlVector(x);
-  x = thrust::device_vector<real>(h_x);
+  std::vector<float> h_x = ext::toStlVector(x);
+  x = thrust::device_vector<float>(h_x);
   printf("x = \n"); print(x);
 
   // =============================
@@ -88,17 +87,17 @@ int main (int argc, char* argv[]) {
 }
 
 void randomInit(mat& m) {
-  real* h_data = new real [m.size()];
+  float* h_data = new float [m.size()];
   for (size_t i=0; i<m.size(); ++i)
-    h_data[i] = rand() / (real) RAND_MAX;
-  cudaMemcpy(m.getData(), h_data, m.size() * sizeof(real), cudaMemcpyHostToDevice);
+    h_data[i] = rand() / (float) RAND_MAX;
+  cudaMemcpy(m.getData(), h_data, m.size() * sizeof(float), cudaMemcpyHostToDevice);
   delete [] h_data;
 }
 
 void randomInit(vec& v) {
-  real* h_data = new real [v.size()];
+  float* h_data = new float [v.size()];
   for (size_t i=0; i<v.size(); ++i)
-    h_data[i] = rand() / (real) RAND_MAX;
+    h_data[i] = rand() / (float) RAND_MAX;
 
   v = vec(h_data, h_data + v.size());
   delete [] h_data;
