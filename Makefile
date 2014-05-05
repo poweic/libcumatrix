@@ -37,8 +37,8 @@ INCLUDE= -I include/\
 LIBRARY= -lcuda -lcublas -lcudart
 LIBRARY_PATH=-L$(CUDA_ROOT)/lib64/
 CUDA_INCLUDE=$(INCLUDE) \
-	     -isystem $(CUDA_ROOT)/samples/common/inc/ \
-	     -isystem $(CUDA_ROOT)/include
+	     -I $(CUDA_ROOT)/samples/common/inc/ \
+	     -I $(CUDA_ROOT)/include
 
 CPPFLAGS= -std=c++0x $(CFLAGS) $(INCLUDE)
 
