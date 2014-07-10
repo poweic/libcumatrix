@@ -14,6 +14,7 @@
 #include <fstream>
 #include <algorithm>
 
+#include <host_defines.h>
 #include <functional.inl>
 
 namespace ext {
