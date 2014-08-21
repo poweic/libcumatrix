@@ -352,14 +352,21 @@ void device_matrix<T>::reserve(size_t capacity) {
 }
 
 template <typename T>
-void device_matrix<T>::print(FILE* fid) const {
+void device_matrix<T>::print(FILE* fid, char delimiter) const {
+
+  if (_rows == 0 || _cols == 0)
+    return;
 
   T* data = new T[size()];
   CCE(cudaMemcpy(data, _data, sizeof(T) * size(), cudaMemcpyDeviceToHost));
 
+  char format[6] = {" %.4e"};
+  format[0] = delimiter;
+
   for (size_t i=0; i<_rows; ++i) {
-    for (size_t j=0; j<_cols; ++j)
-      fprintf(fid, "%.4e ", data[j*_rows + i]);
+    fprintf(fid, "%.4e", data[i]);
+    for (size_t j=1; j<_cols; ++j)
+      fprintf(fid, format, data[j*_rows + i]);
     fprintf(fid, "\n");
   }
 
