@@ -259,7 +259,8 @@ device_matrix<T> device_matrix<T>::operator / (T alpha) const {
 // ===== Matrix-scalar Multiplication =====
 template <typename T>
 device_matrix<T>& device_matrix<T>::operator *= (T alpha) {
-  cublas_scal(_rows*_cols, alpha, _data, 1);
+  if (alpha != 1)
+    cublas_scal(_rows*_cols, alpha, _data, 1);
   return *this;
 }
 
@@ -352,7 +353,7 @@ void device_matrix<T>::reserve(size_t capacity) {
 }
 
 template <typename T>
-void device_matrix<T>::print(FILE* fid, char delimiter) const {
+void device_matrix<T>::print(FILE* fid, int precision, char delimiter) const {
 
   if (_rows == 0 || _cols == 0)
     return;
@@ -360,11 +361,11 @@ void device_matrix<T>::print(FILE* fid, char delimiter) const {
   T* data = new T[size()];
   CCE(cudaMemcpy(data, _data, sizeof(T) * size(), cudaMemcpyDeviceToHost));
 
-  char format[6] = {" %.4e"};
-  format[0] = delimiter;
+  char format[16];
+  sprintf(format, "%c%%.%de", delimiter, precision < 0 ? 0 : precision);
 
   for (size_t i=0; i<_rows; ++i) {
-    fprintf(fid, "%.4e", data[i]);
+    fprintf(fid, format, data[i]);
     for (size_t j=1; j<_cols; ++j)
       fprintf(fid, format, data[j*_rows + i]);
     fprintf(fid, "\n");
