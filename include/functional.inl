@@ -88,7 +88,8 @@ namespace func {
 
   template <typename T>
   struct log {
-    __host__ __device__ T operator() (const T& x) { return logf(x); }
+    // __host__ __device__ T operator() (const T& x) { return logf(x); }
+    __host__ __device__ T operator() (const T& x) { return x <= 1e-45 ? -103.279 : logf(x); }
   };
 };
 

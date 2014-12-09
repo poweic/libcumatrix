@@ -169,7 +169,7 @@ public:
   void resize(size_t r, size_t c);
   void resize(size_t r, size_t c, T value);
   void reserve(size_t capacity);
-  void print(FILE* fid = stdout, char delimiter = ' ') const;
+  void print(FILE* fid = stdout, int precision = 4, char delimiter = ' ') const;
 
   void fillwith(T val);
   size_t size() const { return _rows * _cols; }
