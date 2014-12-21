@@ -1,16 +1,15 @@
 CC=gcc
-CXX=g++-4.6
+CXX=g++
 CFLAGS=
 NVCC=nvcc -arch=sm_21 -w
 
 CUDA_ROOT=/usr/local/cuda
-#BOOST_ROOT=/usr/local/boost/
 
 EXECUTABLES=
 EXAMPLE_PROGRAM=benchmark example1 example2
 OBJ=obj/device_matrix.o obj/cuda_memory_manager.o
  
-.PHONY: debug all o3 ctags
+.PHONY: debug all o3 ctags clean
 all: libs $(EXECUTABLES) $(EXAMPLE_PROGRAM) ctags
 
 o3: CFLAGS+=-O3
@@ -31,8 +30,6 @@ vpath %.cu src/
 
 INCLUDE= -I include/\
 	 -I ../math_ext/
-
-#-I $(BOOST_ROOT)
 
 LIBRARY= -lcuda -lcublas -lcudart
 LIBRARY_PATH=-L$(CUDA_ROOT)/lib64/
@@ -64,11 +61,7 @@ obj/%.d: %.cpp
 
 -include $(addprefix obj/,$(subst .cpp,.d,$(SOURCES)))
 
-.PHONY: ctags
 ctags:
-ifneq ($(shell which ctags),)
-	@ctags -R *
-endif
-
+	@if command -v ctags >/dev/null 2>&1; then ctags -R --langmap=C:+.cu *; fi
 clean:
 	rm -rf $(EXECUTABLES) $(EXAMPLE_PROGRAM) obj/* lib/*.a
