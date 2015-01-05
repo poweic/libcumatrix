@@ -5,7 +5,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
 
-#define mylog(token) {cout << #token " = " << token << endl;}
+#define mylog(token) {std::cout << #token " = " << token << std::endl;}
 
 template <typename T>
 cudaStream_t device_matrix<T>::_cuda_stream = 0;
@@ -67,7 +67,7 @@ device_matrix<T>::device_matrix(T* h_data, size_t r, size_t c):
 }
 
 template <typename T>
-device_matrix<T>::device_matrix(const string& filename):
+device_matrix<T>::device_matrix(const std::string& filename):
   _rows(0), _cols(0),
   _capacity(_rows*_cols),
   _data(NULL) {
@@ -383,7 +383,7 @@ void device_matrix<T>::fillwith(T val) {
 }
 
 template <typename T>
-void device_matrix<T>::save(const string& filename) const {
+void device_matrix<T>::save(const std::string& filename) const {
   FILE* fid = fopen(filename.c_str(), "w");
   if (fid == NULL)
     return;

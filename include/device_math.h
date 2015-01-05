@@ -13,8 +13,8 @@
 
 namespace ext {
   template <typename T>
-  vector<T> toStlVector(const thrust::device_vector<T>& v) {
-    vector<T> stl_vector(v.size());
+  std::vector<T> toStlVector(const thrust::device_vector<T>& v) {
+    std::vector<T> stl_vector(v.size());
     thrust::copy(v.begin(), v.end(), stl_vector.begin());
     return stl_vector;
   }
@@ -24,7 +24,7 @@ namespace ext {
   // ========================
 
   template <typename T>
-  void save(const thrust::device_vector<T>& v, string filename) {
+  void save(const thrust::device_vector<T>& v, std::string filename) {
     ext::save(toStlVector(v), filename);
   }
 
@@ -33,8 +33,8 @@ namespace ext {
   // ==========================
 
   template <typename T>
-  thrust::device_vector<T> load(string filename) {
-    vector<T> hv;
+  thrust::device_vector<T> load(std::string filename) {
+    std::vector<T> hv;
     ext::load<T>(hv, filename);
     return thrust::device_vector<T>(hv.begin(), hv.end());
   }

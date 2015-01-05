@@ -5,7 +5,6 @@
 #include <string>
 #include <iostream>
 #include <vector>
-using namespace std;
 
 /* Includes, cuda */
 #include <cuda_runtime.h>
@@ -101,7 +100,7 @@ public:
   device_matrix(T* h_data, size_t r, size_t c);
 
   // Load from file. Ex: *.mat in text-form
-  device_matrix(const string& filename);
+  device_matrix(const std::string& filename);
 
   // Copy Constructor 
   device_matrix(const device_matrix<T>& source);
@@ -176,7 +175,7 @@ public:
   size_t getRows() const { return _rows; }
   size_t getCols() const { return _cols; }
   T* getData() const { return _data; }
-  void save(const string& filename) const;
+  void save(const std::string& filename) const;
 
   void status() const {
     printf("\33[33m[Info]\33[0m rows = %lu, cols = %lu, capacity = %lu\n", _rows, _cols, _capacity);
