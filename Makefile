@@ -1,9 +1,21 @@
-CC=gcc
-CXX=g++
+BASEPROJ?=.
+
+FILENAME=$(BASEPROJ)/config.mk
+ifeq ("$(wildcard $(FILENAME))",)
+else
+include $(BASEPROJ)/config.mk
+endif
+
+CFG_CC?=gcc-4.9
+CFG_CXX?=g++-4.9
+CFG_NVCC?=nvcc
+
+CFG_NVCC+= -arch=sm_21 -w
+
 CFLAGS=
-NVCC=nvcc -arch=sm_21 -w
 
 CUDA_ROOT=/usr/local/cuda
+CFG_CUDA_LIBPATH?=/usr/local/cuda/lib
 
 EXECUTABLES=
 EXAMPLE_PROGRAM=benchmark example1 example2
@@ -32,7 +44,7 @@ INCLUDE= -I include/\
 	 -I ../math_ext/
 
 LIBRARY= -lcuda -lcublas -lcudart
-LIBRARY_PATH=-L$(CUDA_ROOT)/lib64/
+LIBRARY_PATH=-L$(CFG_CUDA_LIBPATH)
 CUDA_INCLUDE=$(INCLUDE) \
 	     -I $(CUDA_ROOT)/samples/common/inc/ \
 	     -I $(CUDA_ROOT)/include
@@ -40,22 +52,22 @@ CUDA_INCLUDE=$(INCLUDE) \
 CPPFLAGS= -std=c++0x $(CFLAGS) $(INCLUDE)
 
 benchmark: $(OBJ) benchmark.cpp
-	$(CXX) $(CPPFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(LIBRARY_PATH) $(LIBRARY)
+	$(CFG_CXX) $(CPPFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(LIBRARY_PATH) $(LIBRARY)
 example1: $(OBJ) example1.cpp
-	$(CXX) $(CPPFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(LIBRARY_PATH) $(LIBRARY)
+	$(CFG_CXX) $(CPPFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(LIBRARY_PATH) $(LIBRARY)
 example2: $(OBJ) example2.cu
-	$(NVCC) $(NVCCFLAGS) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(LIBRARY_PATH) $(LIBRARY)
+	$(CFG_NVCC) $(NVCCFLAGS) $(CFLAGS) $(CUDA_INCLUDE) -o $@ $^ $(LIBRARY_PATH) $(LIBRARY)
 # +==============================+
 # +===== Other Phony Target =====+
 # +==============================+
 obj/%.o: %.cpp include/%.h
-	$(CXX) $(CPPFLAGS) $(CUDA_INCLUDE) -o $@ -c $<
+	$(CFG_CXX) $(CPPFLAGS) $(CUDA_INCLUDE) -o $@ -c $<
 
 obj/%.o: %.cu
-	$(NVCC) $(NVCCFLAGS) $(CFLAGS) $(CUDA_INCLUDE) -o $@ -c $<
+	$(CFG_NVCC) $(NVCCFLAGS) $(CFLAGS) $(CUDA_INCLUDE) -o $@ -c $<
 
 obj/%.d: %.cpp
-	@$(CXX) -MM $(CPPFLAGS) $< > $@.$$$$; \
+	@$(CFG_CXX) -MM $(CPPFLAGS) $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,obj/\1.o $@ : ,g' < $@.$$$$ > $@;\
 	rm -f $@.$$$$
 
