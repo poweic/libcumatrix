@@ -102,4 +102,5 @@ float Timer::toc() {
 
   float diff = 0.0f;
   CCE(cudaEventElapsedTime(&diff , start, stop));
+  return diff;
 }
